@@ -1,0 +1,9 @@
+name: cvss
+version: 0.1.0
+
+authors:
+  - hahwul <hahwul@gmail.com>
+
+crystal: '>= 1.20.0'
+
+license: MIT
