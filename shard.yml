@@ -1,5 +1,9 @@
 name: cvss
 version: 0.1.0
+description: |
+  A Crystal implementation of the Common Vulnerability Scoring System
+  (CVSS). Parses, scores, and serializes vector strings for v2.0, v3.0,
+  v3.1, and v4.0.
 
 authors:
   - hahwul <hahwul@gmail.com>
@@ -7,3 +11,7 @@ authors:
 crystal: '>= 1.20.0'
 
 license: MIT
+
+repository: https://github.com/hahwul/cvss.cr
+homepage: https://cvss.cr.hahwul.com
+documentation: https://cvss.cr.hahwul.com
