@@ -189,11 +189,21 @@ CVSS.parse("CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H/E:F").to_h
 #     "S" => "U", "C" => "H", "I" => "H", "A" => "H", "E" => "F"}
 ```
 
-### MacroVector (CVSS v4.0)
+### MacroVector and Nomenclature (CVSS v4.0)
 
 ```crystal
 v4 = CVSS::V4::Vector.parse("CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:H/VI:H/VA:H/SC:N/SI:N/SA:N")
-v4.macro_vector  # => "000200"
+v4.macro_vector       # => "000200"
+v4.nomenclature.to_s  # => "CVSS-B"
+
+# Per CVSS v4.0 spec §6, the label reflects which optional metric groups
+# carry meaningful (non-X) values:
+bte = CVSS::V4::Vector.parse(
+  "CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:H/VI:H/VA:H/SC:N/SI:N/SA:N/E:A/MAV:P"
+)
+bte.nomenclature.to_s         # => "CVSS-BTE"
+bte.threat_set?               # => true
+bte.environmental_set?        # => true
 ```
 
 ### Errors

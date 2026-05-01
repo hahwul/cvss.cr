@@ -136,6 +136,73 @@ describe CVSS::V4::Vector do
     end
   end
 
+  describe "Nomenclature (spec §6)" do
+    it "classifies a base-only vector as CVSS-B" do
+      v = parse("CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:H/VI:H/VA:H/SC:N/SI:N/SA:N")
+      v.nomenclature.should eq(CVSS::V4::Nomenclature::Base)
+      v.nomenclature.to_s.should eq("CVSS-B")
+    end
+
+    it "classifies E-set as CVSS-BT" do
+      v = parse("CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:H/VI:H/VA:H/SC:N/SI:N/SA:N/E:A")
+      v.nomenclature.should eq(CVSS::V4::Nomenclature::BaseThreat)
+      v.nomenclature.to_s.should eq("CVSS-BT")
+    end
+
+    it "classifies any environmental as CVSS-BE" do
+      v = parse("CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:H/VI:H/VA:H/SC:N/SI:N/SA:N/MAV:P")
+      v.nomenclature.should eq(CVSS::V4::Nomenclature::BaseEnvironmental)
+      v.nomenclature.to_s.should eq("CVSS-BE")
+    end
+
+    it "classifies threat + environmental as CVSS-BTE" do
+      v = parse("CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:H/VI:H/VA:H/SC:N/SI:N/SA:N/E:A/MAV:P")
+      v.nomenclature.should eq(CVSS::V4::Nomenclature::BaseThreatEnvironmental)
+      v.nomenclature.to_s.should eq("CVSS-BTE")
+    end
+
+    it "treats explicit X as 'not set' (E:X is still CVSS-B)" do
+      v = parse("CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:H/VI:H/VA:H/SC:N/SI:N/SA:N/E:X")
+      v.nomenclature.should eq(CVSS::V4::Nomenclature::Base)
+    end
+
+    it "treats explicit X env metrics as 'not set' (CR:X is still CVSS-B)" do
+      v = parse("CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:H/VI:H/VA:H/SC:N/SI:N/SA:N/CR:X/MAV:X")
+      v.nomenclature.should eq(CVSS::V4::Nomenclature::Base)
+    end
+
+    it "supplemental metrics never change the nomenclature" do
+      v = parse("CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:H/VI:H/VA:H/SC:N/SI:N/SA:N/U:Red/AU:Y/R:I/V:C/RE:H/S:P")
+      v.nomenclature.should eq(CVSS::V4::Nomenclature::Base)
+    end
+
+    it "any of CR/IR/AR set is CVSS-BE" do
+      parse("CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:H/VI:H/VA:H/SC:N/SI:N/SA:N/CR:H").nomenclature.should eq(CVSS::V4::Nomenclature::BaseEnvironmental)
+      parse("CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:H/VI:H/VA:H/SC:N/SI:N/SA:N/IR:M").nomenclature.should eq(CVSS::V4::Nomenclature::BaseEnvironmental)
+      parse("CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:H/VI:H/VA:H/SC:N/SI:N/SA:N/AR:L").nomenclature.should eq(CVSS::V4::Nomenclature::BaseEnvironmental)
+    end
+
+    it "any modified subsequent metric set is CVSS-BE" do
+      parse("CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:H/VI:H/VA:H/SC:N/SI:N/SA:N/MSI:S").nomenclature.should eq(CVSS::V4::Nomenclature::BaseEnvironmental)
+    end
+
+    it "exposes threat_set? / environmental_set? predicates" do
+      base = parse("CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:H/VI:H/VA:H/SC:N/SI:N/SA:N")
+      base.threat_set?.should be_false
+      base.environmental_set?.should be_false
+
+      bte = parse("CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:H/VI:H/VA:H/SC:N/SI:N/SA:N/E:A/MAV:P")
+      bte.threat_set?.should be_true
+      bte.environmental_set?.should be_true
+    end
+
+    it "auto-generated enum predicates work" do
+      n = CVSS::V4::Nomenclature::BaseThreatEnvironmental
+      n.base_threat_environmental?.should be_true
+      n.base?.should be_false
+    end
+  end
+
   describe "macro_vector" do
     it "is exposed as an instance method" do
       v = parse("CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:H/VI:H/VA:H/SC:N/SI:N/SA:N")

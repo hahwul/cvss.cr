@@ -179,6 +179,14 @@ describe CVSS do
       json["macroVector"].as_s.should eq("000200")
     end
 
+    it "emits the spec §6 nomenclature for v4" do
+      base = CVSS.parse("CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:H/VI:H/VA:H/SC:N/SI:N/SA:N")
+      JSON.parse(base.to_json)["nomenclature"].as_s.should eq("CVSS-B")
+
+      bte = CVSS.parse("CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:H/VI:H/VA:H/SC:N/SI:N/SA:N/E:A/MAV:P")
+      JSON.parse(bte.to_json)["nomenclature"].as_s.should eq("CVSS-BTE")
+    end
+
     it "handles v2 vectors (no Critical band)" do
       v = CVSS.parse("AV:N/AC:L/Au:N/C:C/I:C/A:C")
       json = JSON.parse(v.to_json)

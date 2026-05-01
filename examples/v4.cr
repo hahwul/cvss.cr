@@ -20,6 +20,17 @@ puts "Severity: #{v.severity}"
 puts "\n--- The 6-character MacroVector ---"
 puts "MacroVector: #{CVSS::V4::Score.macro_vector(v)}" # => 000200
 
+puts "\n--- Nomenclature (spec §6) ---"
+puts "base only:   #{v.nomenclature}"
+threat = CVSS::V4::Vector.parse(
+  "CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:H/VI:H/VA:H/SC:N/SI:N/SA:N/E:A"
+)
+both = CVSS::V4::Vector.parse(
+  "CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:H/VI:H/VA:H/SC:N/SI:N/SA:N/E:A/MAV:P"
+)
+puts "with E:A:    #{threat.nomenclature}"
+puts "BTE:         #{both.nomenclature}"
+
 puts "\n--- E:U downgrades the score (Unreported exploit) ---"
 
 hi = CVSS::V4::Vector.parse(

@@ -1,6 +1,42 @@
 require "./score"
 
 module CVSS::V4
+  # Vector nomenclature classification per CVSS v4.0 specification §6.
+  #
+  # A v4.0 vector is labelled by which optional metric groups carry
+  # meaningful (non-`X`) values:
+  #
+  # | Code      | Threat (E)  | Environmental (CR/IR/AR/M*) |
+  # |-----------|-------------|-----------------------------|
+  # | CVSS-B    | unset / X   | unset / X                   |
+  # | CVSS-BT   | set         | unset / X                   |
+  # | CVSS-BE   | unset / X   | set                         |
+  # | CVSS-BTE  | set         | set                         |
+  #
+  # Supplemental metrics (S, AU, R, V, RE, U) are informational and
+  # never change the nomenclature.
+  enum Nomenclature
+    Base                    # CVSS-B
+    BaseThreat              # CVSS-BT
+    BaseEnvironmental       # CVSS-BE
+    BaseThreatEnvironmental # CVSS-BTE
+
+    # Spec-defined label string ("CVSS-B", "CVSS-BT", …). Overrides the
+    # default `Enum#to_s` which would otherwise return the member name.
+    def to_s : String
+      case self
+      in Base                    then "CVSS-B"
+      in BaseThreat              then "CVSS-BT"
+      in BaseEnvironmental       then "CVSS-BE"
+      in BaseThreatEnvironmental then "CVSS-BTE"
+      end
+    end
+
+    def to_s(io : IO) : Nil
+      io << to_s
+    end
+  end
+
   # CVSS v4.0 vector.
   #
   # ```
@@ -357,6 +393,48 @@ module CVSS::V4
     # ```
     def macro_vector : String
       Score.macro_vector(self)
+    end
+
+    # Vector nomenclature per CVSS v4.0 spec §6 — classifies the vector by
+    # which optional metric groups are populated (Base only, +Threat,
+    # +Environmental, or both).
+    #
+    # ```
+    # vec = CVSS::V4::Vector.parse("CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:H/VI:H/VA:H/SC:N/SI:N/SA:N")
+    # vec.nomenclature.to_s  # => "CVSS-B"
+    # vec.nomenclature.base? # => true
+    # ```
+    def nomenclature : Nomenclature
+      t = threat_set?
+      e = environmental_set?
+      if t && e
+        Nomenclature::BaseThreatEnvironmental
+      elsif t
+        Nomenclature::BaseThreat
+      elsif e
+        Nomenclature::BaseEnvironmental
+      else
+        Nomenclature::Base
+      end
+    end
+
+    # True when the Threat metric group has a meaningful value (E set and not X).
+    def threat_set? : Bool
+      meaningful?(@e)
+    end
+
+    # True when any Environmental metric (Security Requirements or Modified base)
+    # carries a meaningful (non-X) value.
+    def environmental_set? : Bool
+      meaningful?(@cr) || meaningful?(@ir) || meaningful?(@ar) ||
+        meaningful?(@mav) || meaningful?(@mac) || meaningful?(@mat) ||
+        meaningful?(@mpr) || meaningful?(@mui) ||
+        meaningful?(@mvc) || meaningful?(@mvi) || meaningful?(@mva) ||
+        meaningful?(@msc) || meaningful?(@msi) || meaningful?(@msa)
+    end
+
+    private def meaningful?(metric) : Bool
+      !metric.nil? && !metric.not_defined?
     end
 
     # ───── Serialization ─────

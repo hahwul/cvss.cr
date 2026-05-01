@@ -31,6 +31,7 @@ Both versions are handled by the same `CVSS::V3::Vector` class. They share metri
 - **Macro vector** is exposed via `vec.macro_vector` for tooling. Format: `EQ1 EQ2 EQ3 EQ4 EQ5 EQ6`, e.g. `"000200"`.
 - **Subsequent System impacts**: `SC`, `SI`, `SA`. Modified counterparts (`MSI`, `MSA`) additionally accept `S` (Safety), which forces `EQ4 = 0`.
 - **Provider Urgency (`U`)** uses full-word values (`Clear`, `Green`, `Amber`, `Red`).
+- **Nomenclature (spec §6)**: `vec.nomenclature` returns one of `Base` (`CVSS-B`), `BaseThreat` (`CVSS-BT`), `BaseEnvironmental` (`CVSS-BE`), `BaseThreatEnvironmental` (`CVSS-BTE`) based on which optional metric groups carry meaningful (non-`X`) values. Supplemental metrics never affect the classification.
 - **Implementation source.** The lookup tables (`cvssLookup`, `maxComposed`, `maxSeverity`) and the depth-distance correction are ported verbatim from [FIRSTdotorg/cvss-v4-calculator](https://github.com/FIRSTdotorg/cvss-v4-calculator) (BSD-2-Clause). Attribution is preserved in `src/cvss/v4/macro_vector.cr`.
 
 ## Cross-version comparisons

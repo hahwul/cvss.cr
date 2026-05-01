@@ -123,8 +123,10 @@ module CVSS::V4
     protected def write_json_fields(json : ::JSON::Builder) : Nil
       super
       # CVSS v4.0 has only a single score (threat/environmental folded in
-      # via the macro vector). Expose the macro vector for tooling.
+      # via the macro vector). Expose the macro vector and nomenclature
+      # classification for tooling.
       json.field "macroVector", macro_vector
+      json.field "nomenclature", nomenclature.to_s
     end
   end
 end
