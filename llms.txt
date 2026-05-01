@@ -1,0 +1,27 @@
+# cvss.cr
+
+> A Crystal implementation of the Common Vulnerability Scoring System (CVSS)
+
+This is the documentation for cvss.cr, a Crystal library that parses, scores, and serializes CVSS v2.0 / v3.0 / v3.1 / v4.0 vector strings.
+
+## Pages
+
+- [cvss.cr](https://cvss.cr.hahwul.com/): A Crystal implementation of the Common Vulnerability Scoring System
+
+## API Reference
+
+- [Errors](https://cvss.cr.hahwul.com/api-reference/errors/): Error types and exception handling
+- [Severity](https://cvss.cr.hahwul.com/api-reference/severity/): Qualitative severity rating shared across CVSS versions
+- [CVSS v2.0](https://cvss.cr.hahwul.com/api-reference/v2/): CVSS::V2::Vector class and metric enums
+- [CVSS v3.x](https://cvss.cr.hahwul.com/api-reference/v3/): CVSS::V3::Vector class and metric enums (handles both v3.0 and v3.1)
+- [CVSS v4.0](https://cvss.cr.hahwul.com/api-reference/v4/): CVSS::V4::Vector class, metric enums, and macro-vector internals
+- [Vector (abstract)](https://cvss.cr.hahwul.com/api-reference/vector/): Abstract base class shared by every CVSS version
+
+## User Guide
+
+- [Basic Usage](https://cvss.cr.hahwul.com/user-guide/basic-usage/): Parsing, typed access, equality, ordering, and serialization
+- [Getting Started](https://cvss.cr.hahwul.com/user-guide/getting-started/): Install cvss.cr and parse your first CVSS vector
+- [JSON & Filters](https://cvss.cr.hahwul.com/user-guide/json-and-filters/): NVD-shaped JSON serialization and classification helpers for filtering
+- [Scoring & Severity](https://cvss.cr.hahwul.com/user-guide/scoring/): Base, Temporal, Environmental scores, sub-scores, and the v4 macro vector
+- [Version Notes](https://cvss.cr.hahwul.com/user-guide/version-notes/): Per-version quirks and spec compliance notes
+

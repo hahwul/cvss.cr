@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://cvss.cr.hahwul.com/sitemap.xml

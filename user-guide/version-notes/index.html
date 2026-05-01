@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Per-version quirks and spec compliance notes">
+  <title>Version Notes - cvss.cr</title>
+  <meta property="og:title" content="Version Notes">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://cvss.cr.hahwul.com/user-guide/version-notes/">
+<meta property="og:description" content="Per-version quirks and spec compliance notes">
+<meta property="og:image" content="https://cvss.cr.hahwul.com/og-images/user-guide-version-notes.svg">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Version Notes">
+<meta name="twitter:description" content="Per-version quirks and spec compliance notes">
+<meta name="twitter:image" content="https://cvss.cr.hahwul.com/og-images/user-guide-version-notes.svg">
+  <link rel="stylesheet" href="https://cvss.cr.hahwul.com/css/style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
+  
+  <meta name="apple-mobile-web-app-title" content="cvss.cr" />
+</head>
+<body data-section="user-guide">
+<header class="docs-header">
+  <a href="https://cvss.cr.hahwul.com/" class="logo">cvss.cr <span>Documentation</span></a>
+  <nav>
+    <a href="https://cvss.cr.hahwul.com/user-guide/">User Guide</a>
+    <a href="https://cvss.cr.hahwul.com/api-reference/">API Reference</a>
+  </nav>
+  <div class="header-right">
+    <button class="search-trigger" onclick="openSearch()" title="Search (⌘K)">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <span>Search</span>
+      <kbd>⌘K</kbd>
+    </button>
+    <a href="https://github.com/hahwul/cvss.cr">GitHub</a>
+  </div>
+</header>
+<div class="search-overlay" id="searchOverlay" onclick="if(event.target===this)closeSearch()">
+  <div class="search-modal">
+    <div class="search-input-wrap">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <input type="text" id="searchInput" placeholder="Search documentation..." autocomplete="off">
+      <kbd onclick="closeSearch()">ESC</kbd>
+    </div>
+    <div class="search-results" id="searchResults"></div>
+  </div>
+</div>
+<div class="docs-container">
+  <aside class="docs-sidebar">
+    <a href="https://cvss.cr.hahwul.com/" class="sidebar-logo">
+      <strong>cvss.cr</strong>
+    </a>
+    <div class="sidebar-section">
+      <div class="sidebar-title">User Guide</div>
+      <ul class="sidebar-links">
+        <li><a href="https://cvss.cr.hahwul.com/user-guide/getting-started/">Getting Started</a></li>
+        <li><a href="https://cvss.cr.hahwul.com/user-guide/basic-usage/">Basic Usage</a></li>
+        <li><a href="https://cvss.cr.hahwul.com/user-guide/scoring/">Scoring &amp; Severity</a></li>
+        <li><a href="https://cvss.cr.hahwul.com/user-guide/json-and-filters/">JSON &amp; Filters</a></li>
+        <li><a href="https://cvss.cr.hahwul.com/user-guide/version-notes/">Version Notes</a></li>
+      </ul>
+    </div>
+    <div class="sidebar-section">
+      <div class="sidebar-title">API Reference</div>
+      <ul class="sidebar-links">
+        <li><a href="https://cvss.cr.hahwul.com/api-reference/vector/">Vector (abstract)</a></li>
+        <li><a href="https://cvss.cr.hahwul.com/api-reference/v2/">CVSS v2.0</a></li>
+        <li><a href="https://cvss.cr.hahwul.com/api-reference/v3/">CVSS v3.x</a></li>
+        <li><a href="https://cvss.cr.hahwul.com/api-reference/v4/">CVSS v4.0</a></li>
+        <li><a href="https://cvss.cr.hahwul.com/api-reference/severity/">Severity</a></li>
+        <li><a href="https://cvss.cr.hahwul.com/api-reference/errors/">Errors</a></li>
+      </ul>
+    </div>
+  </aside>
+  <main class="docs-main">
+    <h1>Version Notes</h1>
+    <h2 id="cvss-v20">CVSS v2.0</h2>
+<ul>
+<li><strong>No prefix in vector strings.</strong> <code>CVSS.parse</code> recognises both prefix-less input and an explicit <code>CVSS:2.0/</code> prefix (some downstream tools emit the latter for symmetry with v3+).</li>
+<li><strong>Severity bands</strong> map at most to <code>High</code> — there is no Critical band. <code>Severity::None</code> is returned for <code>0.0</code>, which is a small convenience extension over the strict spec (which only defines Low/Medium/High).</li>
+<li><strong>Multi-character codes</strong>: <code>Au</code> (lowercase <code>u</code>), <code>CDP:LM</code>/<code>CDP:MH</code>, <code>RL:OF</code>/<code>RL:TF</code>, <code>RC:UC</code>/<code>RC:UR</code>, <code>E:POC</code> are all parsed and emitted exactly as written.</li>
+<li>Temporal and Environmental metrics are supported. <code>environmental_score</code> reduces to <code>0.0</code> when <code>TD:N</code>.</li>
+</ul>
+<h2 id="cvss-v30-vs-v31">CVSS v3.0 vs v3.1</h2>
+<p>Both versions are handled by the same <code>CVSS::V3::Vector</code> class. They share metric definitions and the base scoring formula. They differ in two places:</p>
+<ol>
+<li>
+<p><strong>RoundUp algorithm</strong></p>
+<ul>
+<li>v3.0: <code>ceiling(input × 10) / 10</code></li>
+<li>v3.1: integer-space spec algorithm that avoids floating-point edge cases on values like <code>4.65</code>.</li>
+</ul>
+</li>
+<li>
+<p><strong>Modified Impact polynomial (Environmental score, Scope:Changed)</strong></p>
+<ul>
+<li>v3.0: <code>7.52 × (ISS - 0.029) - 3.25 × (ISS - 0.02)^15</code></li>
+<li>v3.1: <code>7.52 × (ISS - 0.029) - 3.25 × (ISS × 0.9731 - 0.02)^13</code></li>
+</ul>
+</li>
+</ol>
+<p><code>vec.version</code> always returns the parsed version string (<code>&quot;3.0&quot;</code> or <code>&quot;3.1&quot;</code>); round-trips via <code>to_s</code> preserve it.</p>
+<h2 id="cvss-v40">CVSS v4.0</h2>
+<ul>
+<li><strong>Single combined score.</strong> Threat (E) and Environmental metrics are folded into a 6-character macro vector that drives a 270-entry lookup table; there are no separate temporal or environmental scores. <code>vec.environmental_score</code> and <code>vec.threat_score</code> are aliased to <code>base_score</code> for API symmetry.</li>
+<li><strong>Macro vector</strong> is exposed via <code>vec.macro_vector</code> for tooling. Format: <code>EQ1 EQ2 EQ3 EQ4 EQ5 EQ6</code>, e.g. <code>&quot;000200&quot;</code>.</li>
+<li><strong>Subsequent System impacts</strong>: <code>SC</code>, <code>SI</code>, <code>SA</code>. Modified counterparts (<code>MSI</code>, <code>MSA</code>) additionally accept <code>S</code> (Safety), which forces <code>EQ4 = 0</code>.</li>
+<li><strong>Provider Urgency (<code>U</code>)</strong> uses full-word values (<code>Clear</code>, <code>Green</code>, <code>Amber</code>, <code>Red</code>).</li>
+<li><strong>Nomenclature (spec §6)</strong>: <code>vec.nomenclature</code> returns one of <code>Base</code> (<code>CVSS-B</code>), <code>BaseThreat</code> (<code>CVSS-BT</code>), <code>BaseEnvironmental</code> (<code>CVSS-BE</code>), <code>BaseThreatEnvironmental</code> (<code>CVSS-BTE</code>) based on which optional metric groups carry meaningful (non-<code>X</code>) values. Supplemental metrics never affect the classification.</li>
+<li><strong>Implementation source.</strong> The lookup tables (<code>cvssLookup</code>, <code>maxComposed</code>, <code>maxSeverity</code>) and the depth-distance correction are ported verbatim from <a href="https://github.com/FIRSTdotorg/cvss-v4-calculator">FIRSTdotorg/cvss-v4-calculator</a> (BSD-2-Clause). Attribution is preserved in <code>src/cvss/v4/macro_vector.cr</code>.</li>
+</ul>
+<h2 id="cross-version-comparisons">Cross-version comparisons</h2>
+<p><code>Vector</code> includes <code>Comparable(Vector)</code> and orders by <code>base_score</code>, so <code>&lt;</code>, <code>&gt;</code>, and <code>sort</code> all work across versions. Equality, however, is <em>structural</em> — a v3 vector and a v4 vector are never <code>==</code> even when their scores are identical.</p>
+
+    <div class="docs-footer">
+      <p>cvss.cr — A Crystal implementation of the Common Vulnerability Scoring System.</p>
+    </div>
+  </main>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+<script>hljs.highlightAll();</script>
+
+<script src="https://cvss.cr.hahwul.com/js/search.js"></script>
+</body>
+</html>

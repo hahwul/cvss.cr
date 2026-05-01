@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="CVSS::V2::Vector class and metric enums">
+  <title>CVSS v2.0 - cvss.cr</title>
+  <meta property="og:title" content="CVSS v2.0">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://cvss.cr.hahwul.com/api-reference/v2/">
+<meta property="og:description" content="CVSS::V2::Vector class and metric enums">
+<meta property="og:image" content="https://cvss.cr.hahwul.com/og-images/api-reference-v2.svg">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="CVSS v2.0">
+<meta name="twitter:description" content="CVSS::V2::Vector class and metric enums">
+<meta name="twitter:image" content="https://cvss.cr.hahwul.com/og-images/api-reference-v2.svg">
+  <link rel="stylesheet" href="https://cvss.cr.hahwul.com/css/style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
+  
+  <meta name="apple-mobile-web-app-title" content="cvss.cr" />
+</head>
+<body data-section="api-reference">
+<header class="docs-header">
+  <a href="https://cvss.cr.hahwul.com/" class="logo">cvss.cr <span>Documentation</span></a>
+  <nav>
+    <a href="https://cvss.cr.hahwul.com/user-guide/">User Guide</a>
+    <a href="https://cvss.cr.hahwul.com/api-reference/">API Reference</a>
+  </nav>
+  <div class="header-right">
+    <button class="search-trigger" onclick="openSearch()" title="Search (⌘K)">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <span>Search</span>
+      <kbd>⌘K</kbd>
+    </button>
+    <a href="https://github.com/hahwul/cvss.cr">GitHub</a>
+  </div>
+</header>
+<div class="search-overlay" id="searchOverlay" onclick="if(event.target===this)closeSearch()">
+  <div class="search-modal">
+    <div class="search-input-wrap">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <input type="text" id="searchInput" placeholder="Search documentation..." autocomplete="off">
+      <kbd onclick="closeSearch()">ESC</kbd>
+    </div>
+    <div class="search-results" id="searchResults"></div>
+  </div>
+</div>
+<div class="docs-container">
+  <aside class="docs-sidebar">
+    <a href="https://cvss.cr.hahwul.com/" class="sidebar-logo">
+      <strong>cvss.cr</strong>
+    </a>
+    <div class="sidebar-section">
+      <div class="sidebar-title">User Guide</div>
+      <ul class="sidebar-links">
+        <li><a href="https://cvss.cr.hahwul.com/user-guide/getting-started/">Getting Started</a></li>
+        <li><a href="https://cvss.cr.hahwul.com/user-guide/basic-usage/">Basic Usage</a></li>
+        <li><a href="https://cvss.cr.hahwul.com/user-guide/scoring/">Scoring &amp; Severity</a></li>
+        <li><a href="https://cvss.cr.hahwul.com/user-guide/json-and-filters/">JSON &amp; Filters</a></li>
+        <li><a href="https://cvss.cr.hahwul.com/user-guide/version-notes/">Version Notes</a></li>
+      </ul>
+    </div>
+    <div class="sidebar-section">
+      <div class="sidebar-title">API Reference</div>
+      <ul class="sidebar-links">
+        <li><a href="https://cvss.cr.hahwul.com/api-reference/vector/">Vector (abstract)</a></li>
+        <li><a href="https://cvss.cr.hahwul.com/api-reference/v2/">CVSS v2.0</a></li>
+        <li><a href="https://cvss.cr.hahwul.com/api-reference/v3/">CVSS v3.x</a></li>
+        <li><a href="https://cvss.cr.hahwul.com/api-reference/v4/">CVSS v4.0</a></li>
+        <li><a href="https://cvss.cr.hahwul.com/api-reference/severity/">Severity</a></li>
+        <li><a href="https://cvss.cr.hahwul.com/api-reference/errors/">Errors</a></li>
+      </ul>
+    </div>
+  </aside>
+  <main class="docs-main">
+    <h1>CVSS v2.0</h1>
+    <h2 id="cvssv2vector"><code>CVSS::V2::Vector</code></h2>
+<pre><code class="language-crystal hljs">v = CVSS::V2::Vector.parse(&quot;AV:N/AC:L/Au:N/C:P/I:P/A:P&quot;)
+v.base_score          # =&gt; 7.5
+v.severity            # =&gt; CVSS::Severity::High
+v.network?            # =&gt; true
+v.to_h                # =&gt; {&quot;AV&quot;=&gt;&quot;N&quot;,&quot;AC&quot;=&gt;&quot;L&quot;,&quot;Au&quot;=&gt;&quot;N&quot;,&quot;C&quot;=&gt;&quot;P&quot;,&quot;I&quot;=&gt;&quot;P&quot;,&quot;A&quot;=&gt;&quot;P&quot;}
+</code></pre>
+<h3 id="class-methods">Class methods</h3>
+<table>
+<thead>
+<tr>
+<th>Method</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>parse(input : String) : Vector</code></td>
+<td>Strict parse. Raises on malformed input. Tolerates an optional <code>CVSS:2.0/</code> prefix.</td>
+</tr>
+<tr>
+<td><code>parse?(input : String) : Vector?</code></td>
+<td>Non-raising variant.</td>
+</tr>
+</tbody>
+</table>
+<h3 id="constructor">Constructor</h3>
+<pre><code class="language-crystal hljs">CVSS::V2::Vector.new(
+  av:, ac:, au:, c:, i:, a:,
+  e: nil, rl: nil, rc: nil,
+  cdp: nil, td: nil, cr: nil, ir: nil, ar: nil,
+)
+</code></pre>
+<h3 id="scoring">Scoring</h3>
+<table>
+<thead>
+<tr>
+<th>Method</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>base_score : Float64</code></td>
+<td>NIST CVSS v2.0 formula.</td>
+</tr>
+<tr>
+<td><code>temporal_score : Float64</code></td>
+<td>Falls back to <code>base_score</code> when no temporal metrics are set.</td>
+</tr>
+<tr>
+<td><code>environmental_score : Float64</code></td>
+<td>Returns <code>0.0</code> when <code>TD:N</code>.</td>
+</tr>
+</tbody>
+</table>
+<h3 id="severity">Severity</h3>
+<table>
+<thead>
+<tr>
+<th>Method</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>severity : Severity</code></td>
+<td>Maps the base score to <code>None</code>/<code>Low</code>/<code>Medium</code>/<code>High</code>. v2 has no Critical band.</td>
+</tr>
+<tr>
+<td><code>temporal_severity : Severity</code></td>
+<td></td>
+</tr>
+<tr>
+<td><code>environmental_severity : Severity</code></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<h3 id="classification-helpers">Classification helpers</h3>
+<table>
+<thead>
+<tr>
+<th>Method</th>
+<th>Returns</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>network?</code> / <code>adjacent_network?</code> / <code>local?</code></td>
+<td><code>Bool</code></td>
+</tr>
+<tr>
+<td><code>requires_authentication?</code></td>
+<td><code>Bool</code> (true when <code>Au != N</code>)</td>
+</tr>
+<tr>
+<td><code>impacts_confidentiality?</code> / <code>impacts_integrity?</code> / <code>impacts_availability?</code></td>
+<td><code>Bool</code></td>
+</tr>
+</tbody>
+</table>
+<h3 id="serialization">Serialization</h3>
+<table>
+<thead>
+<tr>
+<th>Method</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>to_s(io : IO) : Nil</code> / <code>to_s : String</code></td>
+<td>Emits the canonical vector string.</td>
+</tr>
+<tr>
+<td><code>to_h : Hash(String, String)</code></td>
+<td>Metric short-codes. Optional metrics omitted when not set.</td>
+</tr>
+<tr>
+<td><code>to_json(json : JSON::Builder) : Nil</code></td>
+<td>NVD-shaped object. Adds <code>temporalScore</code>/<code>environmentalScore</code> only when set.</td>
+</tr>
+</tbody>
+</table>
+<h2 id="metric-enums">Metric enums</h2>
+<p>All accept <code>parse(s : String) : Self</code>, <code>code : String</code>, and <code>weight : Float64</code>.</p>
+<table>
+<thead>
+<tr>
+<th>Enum</th>
+<th>Codes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>AccessVector</code></td>
+<td><code>L</code> Local, <code>A</code> AdjacentNetwork, <code>N</code> Network</td>
+</tr>
+<tr>
+<td><code>AccessComplexity</code></td>
+<td><code>H</code> High, <code>M</code> Medium, <code>L</code> Low</td>
+</tr>
+<tr>
+<td><code>Authentication</code></td>
+<td><code>M</code> Multiple, <code>S</code> Single, <code>N</code> None</td>
+</tr>
+<tr>
+<td><code>Impact</code> <em>(C/I/A)</em></td>
+<td><code>N</code> None, <code>P</code> Partial, <code>C</code> Complete</td>
+</tr>
+<tr>
+<td><code>Exploitability</code></td>
+<td><code>U</code> Unproven, <code>POC</code> ProofOfConcept, <code>F</code> Functional, <code>H</code> High, <code>ND</code> NotDefined</td>
+</tr>
+<tr>
+<td><code>RemediationLevel</code></td>
+<td><code>OF</code> OfficialFix, <code>TF</code> TemporaryFix, <code>W</code> Workaround, <code>U</code> Unavailable, <code>ND</code> NotDefined</td>
+</tr>
+<tr>
+<td><code>ReportConfidence</code></td>
+<td><code>UC</code> Unconfirmed, <code>UR</code> Uncorroborated, <code>C</code> Confirmed, <code>ND</code> NotDefined</td>
+</tr>
+<tr>
+<td><code>CollateralDamagePotential</code></td>
+<td><code>N</code>, <code>L</code>, <code>LM</code>, <code>MH</code>, <code>H</code>, <code>ND</code></td>
+</tr>
+<tr>
+<td><code>TargetDistribution</code></td>
+<td><code>N</code>, <code>L</code>, <code>M</code>, <code>H</code>, <code>ND</code></td>
+</tr>
+<tr>
+<td><code>SecurityRequirement</code> <em>(CR/IR/AR)</em></td>
+<td><code>L</code>, <code>M</code>, <code>H</code>, <code>ND</code></td>
+</tr>
+</tbody>
+</table>
+
+    <div class="docs-footer">
+      <p>cvss.cr — A Crystal implementation of the Common Vulnerability Scoring System.</p>
+    </div>
+  </main>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+<script>hljs.highlightAll();</script>
+
+<script src="https://cvss.cr.hahwul.com/js/search.js"></script>
+</body>
+</html>

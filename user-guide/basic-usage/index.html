@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Parsing, typed access, equality, ordering, and serialization">
+  <title>Basic Usage - cvss.cr</title>
+  <meta property="og:title" content="Basic Usage">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://cvss.cr.hahwul.com/user-guide/basic-usage/">
+<meta property="og:description" content="Parsing, typed access, equality, ordering, and serialization">
+<meta property="og:image" content="https://cvss.cr.hahwul.com/og-images/user-guide-basic-usage.svg">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Basic Usage">
+<meta name="twitter:description" content="Parsing, typed access, equality, ordering, and serialization">
+<meta name="twitter:image" content="https://cvss.cr.hahwul.com/og-images/user-guide-basic-usage.svg">
+  <link rel="stylesheet" href="https://cvss.cr.hahwul.com/css/style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
+  
+  <meta name="apple-mobile-web-app-title" content="cvss.cr" />
+</head>
+<body data-section="user-guide">
+<header class="docs-header">
+  <a href="https://cvss.cr.hahwul.com/" class="logo">cvss.cr <span>Documentation</span></a>
+  <nav>
+    <a href="https://cvss.cr.hahwul.com/user-guide/">User Guide</a>
+    <a href="https://cvss.cr.hahwul.com/api-reference/">API Reference</a>
+  </nav>
+  <div class="header-right">
+    <button class="search-trigger" onclick="openSearch()" title="Search (⌘K)">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <span>Search</span>
+      <kbd>⌘K</kbd>
+    </button>
+    <a href="https://github.com/hahwul/cvss.cr">GitHub</a>
+  </div>
+</header>
+<div class="search-overlay" id="searchOverlay" onclick="if(event.target===this)closeSearch()">
+  <div class="search-modal">
+    <div class="search-input-wrap">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <input type="text" id="searchInput" placeholder="Search documentation..." autocomplete="off">
+      <kbd onclick="closeSearch()">ESC</kbd>
+    </div>
+    <div class="search-results" id="searchResults"></div>
+  </div>
+</div>
+<div class="docs-container">
+  <aside class="docs-sidebar">
+    <a href="https://cvss.cr.hahwul.com/" class="sidebar-logo">
+      <strong>cvss.cr</strong>
+    </a>
+    <div class="sidebar-section">
+      <div class="sidebar-title">User Guide</div>
+      <ul class="sidebar-links">
+        <li><a href="https://cvss.cr.hahwul.com/user-guide/getting-started/">Getting Started</a></li>
+        <li><a href="https://cvss.cr.hahwul.com/user-guide/basic-usage/">Basic Usage</a></li>
+        <li><a href="https://cvss.cr.hahwul.com/user-guide/scoring/">Scoring &amp; Severity</a></li>
+        <li><a href="https://cvss.cr.hahwul.com/user-guide/json-and-filters/">JSON &amp; Filters</a></li>
+        <li><a href="https://cvss.cr.hahwul.com/user-guide/version-notes/">Version Notes</a></li>
+      </ul>
+    </div>
+    <div class="sidebar-section">
+      <div class="sidebar-title">API Reference</div>
+      <ul class="sidebar-links">
+        <li><a href="https://cvss.cr.hahwul.com/api-reference/vector/">Vector (abstract)</a></li>
+        <li><a href="https://cvss.cr.hahwul.com/api-reference/v2/">CVSS v2.0</a></li>
+        <li><a href="https://cvss.cr.hahwul.com/api-reference/v3/">CVSS v3.x</a></li>
+        <li><a href="https://cvss.cr.hahwul.com/api-reference/v4/">CVSS v4.0</a></li>
+        <li><a href="https://cvss.cr.hahwul.com/api-reference/severity/">Severity</a></li>
+        <li><a href="https://cvss.cr.hahwul.com/api-reference/errors/">Errors</a></li>
+      </ul>
+    </div>
+  </aside>
+  <main class="docs-main">
+    <h1>Basic Usage</h1>
+    <h2 id="parsing-amp-version-dispatch">Parsing &amp; version dispatch</h2>
+<pre><code class="language-crystal hljs">CVSS.parse(&quot;CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H&quot;)     # → V3::Vector
+CVSS.parse(&quot;CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:H/VI:H/VA:H/SC:N/SI:N/SA:N&quot;)  # → V4::Vector
+CVSS.parse(&quot;CVSS:2.0/AV:N/AC:L/Au:N/C:P/I:P/A:P&quot;)              # → V2::Vector
+CVSS.parse(&quot;AV:N/AC:L/Au:N/C:P/I:P/A:P&quot;)                       # → V2::Vector (no prefix)
+</code></pre>
+<h2 id="typed-metric-access">Typed metric access</h2>
+<p>Use the version-specific class to read individual metrics with strong typing:</p>
+<pre><code class="language-crystal hljs">v = CVSS::V3::Vector.parse(&quot;CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H&quot;)
+v.av    # =&gt; CVSS::V3::AttackVector::Network
+v.s     # =&gt; CVSS::V3::Scope::Unchanged
+v.c     # =&gt; CVSS::V3::Impact::High
+</code></pre>
+<h2 id="building-a-vector-programmatically">Building a vector programmatically</h2>
+<pre><code class="language-crystal hljs">v = CVSS::V3::Vector.new(
+  av: CVSS::V3::AttackVector::Network,
+  ac: CVSS::V3::AttackComplexity::Low,
+  pr: CVSS::V3::PrivilegesRequired::None,
+  ui: CVSS::V3::UserInteraction::None,
+  s:  CVSS::V3::Scope::Unchanged,
+  c:  CVSS::V3::Impact::High,
+  i:  CVSS::V3::Impact::High,
+  a:  CVSS::V3::Impact::High,
+)
+v.to_s  # =&gt; &quot;CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H&quot;
+</code></pre>
+<h2 id="round-tripping">Round-tripping</h2>
+<p><code>to_s</code> always produces the canonical FIRST ordering:</p>
+<pre><code class="language-crystal hljs">input  = &quot;CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H/E:F/RL:O/RC:C&quot;
+parsed = CVSS.parse(input)
+parsed.to_s == input  # =&gt; true
+</code></pre>
+<h2 id="equality-and-hashing">Equality and hashing</h2>
+<p>Vectors are value types — <code>==</code> is <em>structural</em> (same concrete class + same metrics) and they hash consistently:</p>
+<pre><code class="language-crystal hljs">a = CVSS.parse(&quot;CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H&quot;)
+b = CVSS.parse(&quot;CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H&quot;)
+a == b              # =&gt; true
+a.hash == b.hash    # =&gt; true
+
+set = Set(CVSS::Vector).new
+set &lt;&lt; a
+set &lt;&lt; b
+set.size            # =&gt; 1
+</code></pre>
+<p>Two vectors of different versions are never <code>==</code>, even when their scores happen to match.</p>
+<h2 id="ordering-with-comparable">Ordering with Comparable</h2>
+<p>Vectors include <code>Comparable(Vector)</code> and compare by <code>base_score</code>, so sorting and <code>&lt;</code> / <code>&gt;</code> work — even across versions:</p>
+<pre><code class="language-crystal hljs">vulns = inputs.map { |s| CVSS.parse(s) }
+vulns.sort.last     # most severe vulnerability
+vulns.min.base_score
+</code></pre>
+<h2 id="hash-export">Hash export</h2>
+<p><code>to_h</code> returns a <code>Hash(String, String)</code> of metric short-codes in canonical order:</p>
+<pre><code class="language-crystal hljs">CVSS.parse(&quot;CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H/E:F&quot;).to_h
+# =&gt; {&quot;AV&quot; =&gt; &quot;N&quot;, &quot;AC&quot; =&gt; &quot;L&quot;, &quot;PR&quot; =&gt; &quot;N&quot;, &quot;UI&quot; =&gt; &quot;N&quot;,
+#     &quot;S&quot; =&gt; &quot;U&quot;, &quot;C&quot; =&gt; &quot;H&quot;, &quot;I&quot; =&gt; &quot;H&quot;, &quot;A&quot; =&gt; &quot;H&quot;, &quot;E&quot; =&gt; &quot;F&quot;}
+</code></pre>
+<p>Optional metrics that are not set are omitted.</p>
+
+    <div class="docs-footer">
+      <p>cvss.cr — A Crystal implementation of the Common Vulnerability Scoring System.</p>
+    </div>
+  </main>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+<script>hljs.highlightAll();</script>
+
+<script src="https://cvss.cr.hahwul.com/js/search.js"></script>
+</body>
+</html>

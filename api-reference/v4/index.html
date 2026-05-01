@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="CVSS::V4::Vector class, metric enums, and macro-vector internals">
+  <title>CVSS v4.0 - cvss.cr</title>
+  <meta property="og:title" content="CVSS v4.0">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://cvss.cr.hahwul.com/api-reference/v4/">
+<meta property="og:description" content="CVSS::V4::Vector class, metric enums, and macro-vector internals">
+<meta property="og:image" content="https://cvss.cr.hahwul.com/og-images/api-reference-v4.svg">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="CVSS v4.0">
+<meta name="twitter:description" content="CVSS::V4::Vector class, metric enums, and macro-vector internals">
+<meta name="twitter:image" content="https://cvss.cr.hahwul.com/og-images/api-reference-v4.svg">
+  <link rel="stylesheet" href="https://cvss.cr.hahwul.com/css/style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
+  
+  <meta name="apple-mobile-web-app-title" content="cvss.cr" />
+</head>
+<body data-section="api-reference">
+<header class="docs-header">
+  <a href="https://cvss.cr.hahwul.com/" class="logo">cvss.cr <span>Documentation</span></a>
+  <nav>
+    <a href="https://cvss.cr.hahwul.com/user-guide/">User Guide</a>
+    <a href="https://cvss.cr.hahwul.com/api-reference/">API Reference</a>
+  </nav>
+  <div class="header-right">
+    <button class="search-trigger" onclick="openSearch()" title="Search (⌘K)">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <span>Search</span>
+      <kbd>⌘K</kbd>
+    </button>
+    <a href="https://github.com/hahwul/cvss.cr">GitHub</a>
+  </div>
+</header>
+<div class="search-overlay" id="searchOverlay" onclick="if(event.target===this)closeSearch()">
+  <div class="search-modal">
+    <div class="search-input-wrap">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <input type="text" id="searchInput" placeholder="Search documentation..." autocomplete="off">
+      <kbd onclick="closeSearch()">ESC</kbd>
+    </div>
+    <div class="search-results" id="searchResults"></div>
+  </div>
+</div>
+<div class="docs-container">
+  <aside class="docs-sidebar">
+    <a href="https://cvss.cr.hahwul.com/" class="sidebar-logo">
+      <strong>cvss.cr</strong>
+    </a>
+    <div class="sidebar-section">
+      <div class="sidebar-title">User Guide</div>
+      <ul class="sidebar-links">
+        <li><a href="https://cvss.cr.hahwul.com/user-guide/getting-started/">Getting Started</a></li>
+        <li><a href="https://cvss.cr.hahwul.com/user-guide/basic-usage/">Basic Usage</a></li>
+        <li><a href="https://cvss.cr.hahwul.com/user-guide/scoring/">Scoring &amp; Severity</a></li>
+        <li><a href="https://cvss.cr.hahwul.com/user-guide/json-and-filters/">JSON &amp; Filters</a></li>
+        <li><a href="https://cvss.cr.hahwul.com/user-guide/version-notes/">Version Notes</a></li>
+      </ul>
+    </div>
+    <div class="sidebar-section">
+      <div class="sidebar-title">API Reference</div>
+      <ul class="sidebar-links">
+        <li><a href="https://cvss.cr.hahwul.com/api-reference/vector/">Vector (abstract)</a></li>
+        <li><a href="https://cvss.cr.hahwul.com/api-reference/v2/">CVSS v2.0</a></li>
+        <li><a href="https://cvss.cr.hahwul.com/api-reference/v3/">CVSS v3.x</a></li>
+        <li><a href="https://cvss.cr.hahwul.com/api-reference/v4/">CVSS v4.0</a></li>
+        <li><a href="https://cvss.cr.hahwul.com/api-reference/severity/">Severity</a></li>
+        <li><a href="https://cvss.cr.hahwul.com/api-reference/errors/">Errors</a></li>
+      </ul>
+    </div>
+  </aside>
+  <main class="docs-main">
+    <h1>CVSS v4.0</h1>
+    <h2 id="cvssv4vector"><code>CVSS::V4::Vector</code></h2>
+<pre><code class="language-crystal hljs">v = CVSS::V4::Vector.parse(
+  &quot;CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:H/VI:H/VA:H/SC:N/SI:N/SA:N&quot;
+)
+v.base_score                  # =&gt; 9.3
+v.macro_vector                # =&gt; &quot;000200&quot;
+v.impacts_subsequent_system?  # =&gt; false
+</code></pre>
+<h3 id="class-methods">Class methods</h3>
+<table>
+<thead>
+<tr>
+<th>Method</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>parse(input : String) : Vector</code></td>
+<td>Requires the <code>CVSS:4.0/</code> prefix.</td>
+</tr>
+<tr>
+<td><code>parse?(input : String) : Vector?</code></td>
+<td>Non-raising.</td>
+</tr>
+</tbody>
+</table>
+<h3 id="constructor">Constructor</h3>
+<p>All eleven base metrics are required; threat / environmental / supplemental fields default to <code>nil</code> (unset).</p>
+<pre><code class="language-crystal hljs">CVSS::V4::Vector.new(
+  av:, ac:, at:, pr:, ui:,
+  vc:, vi:, va:, sc:, si:, sa:,
+  e: nil,
+  cr: nil, ir: nil, ar: nil,
+  mav: nil, mac: nil, mat: nil, mpr: nil, mui: nil,
+  mvc: nil, mvi: nil, mva: nil, msc: nil, msi: nil, msa: nil,
+  s: nil, au: nil, r: nil, v: nil, re: nil, u: nil,
+)
+</code></pre>
+<h3 id="scoring">Scoring</h3>
+<table>
+<thead>
+<tr>
+<th>Method</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>base_score : Float64</code></td>
+<td>The single combined score. Threat (E) and Environmental are folded in via the macro vector.</td>
+</tr>
+<tr>
+<td><code>threat_score : Float64</code> / <code>environmental_score : Float64</code></td>
+<td>Aliases of <code>base_score</code> for API symmetry with v3.</td>
+</tr>
+<tr>
+<td><code>macro_vector : String</code></td>
+<td>The 6-character macro vector (<code>EQ1 EQ2 EQ3 EQ4 EQ5 EQ6</code>).</td>
+</tr>
+<tr>
+<td><code>nomenclature : Nomenclature</code></td>
+<td>Spec §6 classification: <code>Base</code> / <code>BaseThreat</code> / <code>BaseEnvironmental</code> / <code>BaseThreatEnvironmental</code>. <code>to_s</code> emits <code>&quot;CVSS-B&quot;</code> / <code>&quot;CVSS-BT&quot;</code> / <code>&quot;CVSS-BE&quot;</code> / <code>&quot;CVSS-BTE&quot;</code>.</td>
+</tr>
+<tr>
+<td><code>threat_set? : Bool</code></td>
+<td>True when the Threat metric (E) is set and not <code>X</code>.</td>
+</tr>
+<tr>
+<td><code>environmental_set? : Bool</code></td>
+<td>True when any CR/IR/AR or Modified-base metric is set and not <code>X</code>.</td>
+</tr>
+<tr>
+<td><code>severity : Severity</code></td>
+<td>Standard 5-tier rating.</td>
+</tr>
+</tbody>
+</table>
+<h3 id="effective-metric-resolution">Effective metric resolution</h3>
+<p><code>effective_code(name : String) : String</code> mirrors the FIRST reference algorithm's <code>m()</code> function: it applies X-defaults (<code>E:X → A</code>, <code>CR/IR/AR:X → H</code>) and Modified-base overrides where applicable.</p>
+<pre><code class="language-crystal hljs">v.effective_code(&quot;E&quot;)   # =&gt; &quot;A&quot; (E:X defaults to Attacked)
+v.effective_code(&quot;AV&quot;)  # =&gt; &quot;P&quot; if MAV:P set, otherwise the parsed AV
+</code></pre>
+<h3 id="classification-helpers">Classification helpers</h3>
+<table>
+<thead>
+<tr>
+<th>Method</th>
+<th>Returns</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>network?</code> / <code>adjacent_network?</code> / <code>local?</code> / <code>physical?</code></td>
+<td><code>Bool</code></td>
+</tr>
+<tr>
+<td><code>requires_privileges?</code></td>
+<td><code>Bool</code></td>
+</tr>
+<tr>
+<td><code>requires_user_interaction?</code></td>
+<td><code>Bool</code> (true when <code>UI != N</code> — covers Passive and Active)</td>
+</tr>
+<tr>
+<td><code>impacts_confidentiality?</code> / <code>impacts_integrity?</code> / <code>impacts_availability?</code></td>
+<td><code>Bool</code> (vulnerable system impact)</td>
+</tr>
+<tr>
+<td><code>impacts_subsequent_system?</code></td>
+<td><code>Bool</code> (any of SC/SI/SA <code>!= N</code>)</td>
+</tr>
+</tbody>
+</table>
+<h3 id="serialization">Serialization</h3>
+<table>
+<thead>
+<tr>
+<th>Method</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>to_s</code></td>
+<td>Canonical FIRST metric ordering.</td>
+</tr>
+<tr>
+<td><code>to_h : Hash(String, String)</code></td>
+<td>All set metrics. <code>U</code> keeps its full-word value (<code>Clear</code>, <code>Green</code>, <code>Amber</code>, <code>Red</code>).</td>
+</tr>
+<tr>
+<td><code>to_json</code></td>
+<td>NVD-shaped JSON with the <code>macroVector</code> field.</td>
+</tr>
+</tbody>
+</table>
+<h2 id="metric-enums">Metric enums</h2>
+<h3 id="base-required">Base (required)</h3>
+<table>
+<thead>
+<tr>
+<th>Enum</th>
+<th>Codes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>AttackVector</code></td>
+<td><code>N</code>, <code>A</code>, <code>L</code>, <code>P</code></td>
+</tr>
+<tr>
+<td><code>AttackComplexity</code></td>
+<td><code>L</code>, <code>H</code></td>
+</tr>
+<tr>
+<td><code>AttackRequirements</code></td>
+<td><code>N</code>, <code>P</code></td>
+</tr>
+<tr>
+<td><code>PrivilegesRequired</code></td>
+<td><code>N</code>, <code>L</code>, <code>H</code></td>
+</tr>
+<tr>
+<td><code>UserInteraction</code></td>
+<td><code>N</code>, <code>P</code>, <code>A</code></td>
+</tr>
+<tr>
+<td><code>VulnerableImpact</code> <em>(VC/VI/VA)</em></td>
+<td><code>H</code>, <code>L</code>, <code>N</code></td>
+</tr>
+<tr>
+<td><code>SubsequentImpact</code> <em>(SC/SI/SA)</em></td>
+<td><code>H</code>, <code>L</code>, <code>N</code></td>
+</tr>
+</tbody>
+</table>
+<h3 id="threat">Threat</h3>
+<table>
+<thead>
+<tr>
+<th>Enum</th>
+<th>Codes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>ExploitMaturity</code></td>
+<td><code>X</code>, <code>A</code>, <code>P</code>, <code>U</code></td>
+</tr>
+</tbody>
+</table>
+<h3 id="environmental">Environmental</h3>
+<table>
+<thead>
+<tr>
+<th>Enum</th>
+<th>Codes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>SecurityRequirement</code> <em>(CR/IR/AR)</em></td>
+<td><code>X</code>, <code>H</code>, <code>M</code>, <code>L</code></td>
+</tr>
+<tr>
+<td><code>ModifiedAttackVector</code></td>
+<td><code>X</code> + base AV codes</td>
+</tr>
+<tr>
+<td><code>ModifiedAttackComplexity</code></td>
+<td><code>X</code>, <code>L</code>, <code>H</code></td>
+</tr>
+<tr>
+<td><code>ModifiedAttackRequirements</code></td>
+<td><code>X</code>, <code>N</code>, <code>P</code></td>
+</tr>
+<tr>
+<td><code>ModifiedPrivilegesRequired</code></td>
+<td><code>X</code>, <code>N</code>, <code>L</code>, <code>H</code></td>
+</tr>
+<tr>
+<td><code>ModifiedUserInteraction</code></td>
+<td><code>X</code>, <code>N</code>, <code>P</code>, <code>A</code></td>
+</tr>
+<tr>
+<td><code>ModifiedVulnerableImpact</code> <em>(MVC/MVI/MVA)</em></td>
+<td><code>X</code>, <code>H</code>, <code>L</code>, <code>N</code></td>
+</tr>
+<tr>
+<td><code>ModifiedSubsequentConfidentiality</code> <em>(MSC)</em></td>
+<td><code>X</code>, <code>H</code>, <code>L</code>, <code>N</code></td>
+</tr>
+<tr>
+<td><code>ModifiedSubsequentIntegrity</code> <em>(MSI)</em></td>
+<td><code>X</code>, <code>S</code>, <code>H</code>, <code>L</code>, <code>N</code> <em>(adds Safety)</em></td>
+</tr>
+<tr>
+<td><code>ModifiedSubsequentAvailability</code> <em>(MSA)</em></td>
+<td><code>X</code>, <code>S</code>, <code>H</code>, <code>L</code>, <code>N</code> <em>(adds Safety)</em></td>
+</tr>
+</tbody>
+</table>
+<p><code>MSI:S</code> or <code>MSA:S</code> forces <code>EQ4 = 0</code> in the macro vector.</p>
+<h3 id="supplemental-informational-only">Supplemental (informational only)</h3>
+<table>
+<thead>
+<tr>
+<th>Enum</th>
+<th>Codes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>Safety</code> <em>(S)</em></td>
+<td><code>X</code>, <code>N</code>, <code>P</code></td>
+</tr>
+<tr>
+<td><code>Automatable</code> <em>(AU)</em></td>
+<td><code>X</code>, <code>N</code>, <code>Y</code></td>
+</tr>
+<tr>
+<td><code>Recovery</code> <em>(R)</em></td>
+<td><code>X</code>, <code>A</code>, <code>U</code>, <code>I</code></td>
+</tr>
+<tr>
+<td><code>ValueDensity</code> <em>(V)</em></td>
+<td><code>X</code>, <code>D</code>, <code>C</code></td>
+</tr>
+<tr>
+<td><code>ResponseEffort</code> <em>(RE)</em></td>
+<td><code>X</code>, <code>L</code>, <code>M</code>, <code>H</code></td>
+</tr>
+<tr>
+<td><code>ProviderUrgency</code> <em>(U)</em></td>
+<td><code>X</code>, <code>Clear</code>, <code>Green</code>, <code>Amber</code>, <code>Red</code></td>
+</tr>
+</tbody>
+</table>
+<h2 id="macro-vector-internals">Macro vector internals</h2>
+<p>The 270-entry lookup table, max-severity vectors per equivalence class, and the depth-distance correction algorithm are ported verbatim from <a href="https://github.com/FIRSTdotorg/cvss-v4-calculator">FIRSTdotorg/cvss-v4-calculator</a> (BSD-2-Clause). Tables live in <code>CVSS::V4::MacroVectorTables</code> (<code>LOOKUP</code>, <code>EQ1_MAXES</code>, …, <code>MAX_SEVERITY_EQ4</code>). The scoring algorithm is in <code>CVSS::V4::Score</code>.</p>
+
+    <div class="docs-footer">
+      <p>cvss.cr — A Crystal implementation of the Common Vulnerability Scoring System.</p>
+    </div>
+  </main>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+<script>hljs.highlightAll();</script>
+
+<script src="https://cvss.cr.hahwul.com/js/search.js"></script>
+</body>
+</html>

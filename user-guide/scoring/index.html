@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Base, Temporal, Environmental scores, sub-scores, and the v4 macro vector">
+  <title>Scoring & Severity - cvss.cr</title>
+  <meta property="og:title" content="Scoring &amp; Severity">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://cvss.cr.hahwul.com/user-guide/scoring/">
+<meta property="og:description" content="Base, Temporal, Environmental scores, sub-scores, and the v4 macro vector">
+<meta property="og:image" content="https://cvss.cr.hahwul.com/og-images/user-guide-scoring.svg">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Scoring &amp; Severity">
+<meta name="twitter:description" content="Base, Temporal, Environmental scores, sub-scores, and the v4 macro vector">
+<meta name="twitter:image" content="https://cvss.cr.hahwul.com/og-images/user-guide-scoring.svg">
+  <link rel="stylesheet" href="https://cvss.cr.hahwul.com/css/style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
+  
+  <meta name="apple-mobile-web-app-title" content="cvss.cr" />
+</head>
+<body data-section="user-guide">
+<header class="docs-header">
+  <a href="https://cvss.cr.hahwul.com/" class="logo">cvss.cr <span>Documentation</span></a>
+  <nav>
+    <a href="https://cvss.cr.hahwul.com/user-guide/">User Guide</a>
+    <a href="https://cvss.cr.hahwul.com/api-reference/">API Reference</a>
+  </nav>
+  <div class="header-right">
+    <button class="search-trigger" onclick="openSearch()" title="Search (⌘K)">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <span>Search</span>
+      <kbd>⌘K</kbd>
+    </button>
+    <a href="https://github.com/hahwul/cvss.cr">GitHub</a>
+  </div>
+</header>
+<div class="search-overlay" id="searchOverlay" onclick="if(event.target===this)closeSearch()">
+  <div class="search-modal">
+    <div class="search-input-wrap">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <input type="text" id="searchInput" placeholder="Search documentation..." autocomplete="off">
+      <kbd onclick="closeSearch()">ESC</kbd>
+    </div>
+    <div class="search-results" id="searchResults"></div>
+  </div>
+</div>
+<div class="docs-container">
+  <aside class="docs-sidebar">
+    <a href="https://cvss.cr.hahwul.com/" class="sidebar-logo">
+      <strong>cvss.cr</strong>
+    </a>
+    <div class="sidebar-section">
+      <div class="sidebar-title">User Guide</div>
+      <ul class="sidebar-links">
+        <li><a href="https://cvss.cr.hahwul.com/user-guide/getting-started/">Getting Started</a></li>
+        <li><a href="https://cvss.cr.hahwul.com/user-guide/basic-usage/">Basic Usage</a></li>
+        <li><a href="https://cvss.cr.hahwul.com/user-guide/scoring/">Scoring &amp; Severity</a></li>
+        <li><a href="https://cvss.cr.hahwul.com/user-guide/json-and-filters/">JSON &amp; Filters</a></li>
+        <li><a href="https://cvss.cr.hahwul.com/user-guide/version-notes/">Version Notes</a></li>
+      </ul>
+    </div>
+    <div class="sidebar-section">
+      <div class="sidebar-title">API Reference</div>
+      <ul class="sidebar-links">
+        <li><a href="https://cvss.cr.hahwul.com/api-reference/vector/">Vector (abstract)</a></li>
+        <li><a href="https://cvss.cr.hahwul.com/api-reference/v2/">CVSS v2.0</a></li>
+        <li><a href="https://cvss.cr.hahwul.com/api-reference/v3/">CVSS v3.x</a></li>
+        <li><a href="https://cvss.cr.hahwul.com/api-reference/v4/">CVSS v4.0</a></li>
+        <li><a href="https://cvss.cr.hahwul.com/api-reference/severity/">Severity</a></li>
+        <li><a href="https://cvss.cr.hahwul.com/api-reference/errors/">Errors</a></li>
+      </ul>
+    </div>
+  </aside>
+  <main class="docs-main">
+    <h1>Scoring & Severity</h1>
+    <h2 id="base-score">Base score</h2>
+<p>Every Vector exposes a <code>base_score : Float64</code> and a <code>severity : CVSS::Severity</code>:</p>
+<pre><code class="language-crystal hljs">v = CVSS.parse(&quot;CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H&quot;)
+v.base_score  # =&gt; 9.8
+v.severity    # =&gt; CVSS::Severity::Critical
+</code></pre>
+<p>The qualitative <code>Severity</code> enum is unified across versions:</p>
+<table>
+<thead>
+<tr>
+<th>Score</th>
+<th>Severity</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>0.0</td>
+<td>None</td>
+</tr>
+<tr>
+<td>0.1 – 3.9</td>
+<td>Low</td>
+</tr>
+<tr>
+<td>4.0 – 6.9</td>
+<td>Medium</td>
+</tr>
+<tr>
+<td>7.0 – 8.9</td>
+<td>High</td>
+</tr>
+<tr>
+<td>9.0 – 10.0</td>
+<td>Critical</td>
+</tr>
+</tbody>
+</table>
+<p>CVSS v2.0 has no Critical band — <code>v2.severity</code> returns at most <code>High</code>.</p>
+<h2 id="temporal-amp-environmental-scores-v2-v3">Temporal &amp; Environmental scores (v2 / v3)</h2>
+<pre><code class="language-crystal hljs">v = CVSS::V3::Vector.parse(
+  &quot;CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H/E:F/RL:O/RC:C&quot;
+)
+v.temporal_score       # =&gt; 9.1
+v.environmental_score  # =&gt; 9.1  (no env metrics → falls back to temporal)
+</code></pre>
+<p>When environmental metrics are set, the modifier weights and scope-aware Impact formula kick in:</p>
+<pre><code class="language-crystal hljs">v = CVSS::V3::Vector.parse(
+  &quot;CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H/E:F/RL:O/RC:R&quot; \
+  &quot;/CR:H/IR:H/AR:M/MAV:A/MAC:H/MPR:N/MUI:N/MS:U/MC:H/MI:N/MA:N&quot;
+)
+v.base_score           # =&gt; 9.8
+v.environmental_score  # =&gt; 6.3
+</code></pre>
+<p>CVSS v3.0 and v3.1 share the same RoundUp at the base level, but use different polynomials in the <em>modified</em> impact formula. The library handles both transparently.</p>
+<h2 id="cvss-v40-single-score">CVSS v4.0 — single score</h2>
+<p>CVSS v4.0 folds Threat (E) and Environmental metrics directly into the macro-vector lookup, so there is one combined score rather than a base / temporal / environmental triple:</p>
+<pre><code class="language-crystal hljs">v = CVSS.parse(
+  &quot;CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:H/VI:H/VA:H/SC:N/SI:N/SA:N&quot;
+)
+v.base_score   # =&gt; 9.3
+</code></pre>
+<p>You can read the 6-character macro vector that drives the lookup:</p>
+<pre><code class="language-crystal hljs">v.macro_vector  # =&gt; &quot;000200&quot;
+</code></pre>
+<h2 id="sub-scores-v3x">Sub-scores (v3.x)</h2>
+<p>For tooling and debugging, v3 vectors expose the intermediate ISS, Impact, and Exploitability sub-scores defined in the spec:</p>
+<pre><code class="language-crystal hljs">v = CVSS::V3::Vector.parse(&quot;CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H&quot;)
+v.iss                       # =&gt; 0.9148...
+v.impact_subscore           # =&gt; 5.873...
+v.exploitability_subscore   # =&gt; 3.887...
+</code></pre>
+<h2 id="severity-from-arbitrary-scores">Severity from arbitrary scores</h2>
+<pre><code class="language-crystal hljs">CVSS::Severity.from_score(7.5)     # =&gt; CVSS::Severity::High
+CVSS::Severity.from_v2_score(3.9)  # =&gt; CVSS::Severity::Low (CVSS v2 banding)
+</code></pre>
+<p><code>Severity</code> is a normal Crystal enum, so it gets <code>&lt;=&gt;</code>, predicate methods (<code>vec.severity.critical?</code>), and string conversion (<code>vec.severity.to_s</code>) for free.</p>
+
+    <div class="docs-footer">
+      <p>cvss.cr — A Crystal implementation of the Common Vulnerability Scoring System.</p>
+    </div>
+  </main>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+<script>hljs.highlightAll();</script>
+
+<script src="https://cvss.cr.hahwul.com/js/search.js"></script>
+</body>
+</html>

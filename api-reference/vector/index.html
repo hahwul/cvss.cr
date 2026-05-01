@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Abstract base class shared by every CVSS version">
+  <title>Vector (abstract) - cvss.cr</title>
+  <meta property="og:title" content="Vector (abstract)">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://cvss.cr.hahwul.com/api-reference/vector/">
+<meta property="og:description" content="Abstract base class shared by every CVSS version">
+<meta property="og:image" content="https://cvss.cr.hahwul.com/og-images/api-reference-vector.svg">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Vector (abstract)">
+<meta name="twitter:description" content="Abstract base class shared by every CVSS version">
+<meta name="twitter:image" content="https://cvss.cr.hahwul.com/og-images/api-reference-vector.svg">
+  <link rel="stylesheet" href="https://cvss.cr.hahwul.com/css/style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
+  
+  <meta name="apple-mobile-web-app-title" content="cvss.cr" />
+</head>
+<body data-section="api-reference">
+<header class="docs-header">
+  <a href="https://cvss.cr.hahwul.com/" class="logo">cvss.cr <span>Documentation</span></a>
+  <nav>
+    <a href="https://cvss.cr.hahwul.com/user-guide/">User Guide</a>
+    <a href="https://cvss.cr.hahwul.com/api-reference/">API Reference</a>
+  </nav>
+  <div class="header-right">
+    <button class="search-trigger" onclick="openSearch()" title="Search (⌘K)">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <span>Search</span>
+      <kbd>⌘K</kbd>
+    </button>
+    <a href="https://github.com/hahwul/cvss.cr">GitHub</a>
+  </div>
+</header>
+<div class="search-overlay" id="searchOverlay" onclick="if(event.target===this)closeSearch()">
+  <div class="search-modal">
+    <div class="search-input-wrap">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <input type="text" id="searchInput" placeholder="Search documentation..." autocomplete="off">
+      <kbd onclick="closeSearch()">ESC</kbd>
+    </div>
+    <div class="search-results" id="searchResults"></div>
+  </div>
+</div>
+<div class="docs-container">
+  <aside class="docs-sidebar">
+    <a href="https://cvss.cr.hahwul.com/" class="sidebar-logo">
+      <strong>cvss.cr</strong>
+    </a>
+    <div class="sidebar-section">
+      <div class="sidebar-title">User Guide</div>
+      <ul class="sidebar-links">
+        <li><a href="https://cvss.cr.hahwul.com/user-guide/getting-started/">Getting Started</a></li>
+        <li><a href="https://cvss.cr.hahwul.com/user-guide/basic-usage/">Basic Usage</a></li>
+        <li><a href="https://cvss.cr.hahwul.com/user-guide/scoring/">Scoring &amp; Severity</a></li>
+        <li><a href="https://cvss.cr.hahwul.com/user-guide/json-and-filters/">JSON &amp; Filters</a></li>
+        <li><a href="https://cvss.cr.hahwul.com/user-guide/version-notes/">Version Notes</a></li>
+      </ul>
+    </div>
+    <div class="sidebar-section">
+      <div class="sidebar-title">API Reference</div>
+      <ul class="sidebar-links">
+        <li><a href="https://cvss.cr.hahwul.com/api-reference/vector/">Vector (abstract)</a></li>
+        <li><a href="https://cvss.cr.hahwul.com/api-reference/v2/">CVSS v2.0</a></li>
+        <li><a href="https://cvss.cr.hahwul.com/api-reference/v3/">CVSS v3.x</a></li>
+        <li><a href="https://cvss.cr.hahwul.com/api-reference/v4/">CVSS v4.0</a></li>
+        <li><a href="https://cvss.cr.hahwul.com/api-reference/severity/">Severity</a></li>
+        <li><a href="https://cvss.cr.hahwul.com/api-reference/errors/">Errors</a></li>
+      </ul>
+    </div>
+  </aside>
+  <main class="docs-main">
+    <h1>Vector (abstract)</h1>
+    <h2 id="cvssvector"><code>CVSS::Vector</code></h2>
+<p>Abstract class. Every concrete vector (<code>CVSS::V2::Vector</code>, <code>CVSS::V3::Vector</code>, <code>CVSS::V4::Vector</code>) inherits from it and implements the abstract methods.</p>
+<p><code>CVSS::Vector</code> <code>include</code>s <code>Comparable(Vector)</code>, so any two vectors can be compared with <code>&lt;</code>, <code>&lt;=</code>, <code>&gt;</code>, <code>&gt;=</code>, <code>clamp</code>, <code>between?</code>, and used with <code>Array#sort</code>.</p>
+<h2 id="abstract-methods">Abstract methods</h2>
+<table>
+<thead>
+<tr>
+<th>Method</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>version : String</code></td>
+<td>Returns <code>&quot;2.0&quot;</code>, <code>&quot;3.0&quot;</code>, <code>&quot;3.1&quot;</code>, or <code>&quot;4.0&quot;</code>.</td>
+</tr>
+<tr>
+<td><code>base_score : Float64</code></td>
+<td>Final, rounded base score in <code>0.0..10.0</code>.</td>
+</tr>
+<tr>
+<td><code>severity : Severity</code></td>
+<td>Qualitative rating (see Severity).</td>
+</tr>
+<tr>
+<td><code>to_s(io : IO) : Nil</code></td>
+<td>Writes the canonical vector string to <code>io</code>.</td>
+</tr>
+</tbody>
+</table>
+<h2 id="concrete-methods">Concrete methods</h2>
+<table>
+<thead>
+<tr>
+<th>Method</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>to_s : String</code></td>
+<td>Returns the canonical vector string.</td>
+</tr>
+<tr>
+<td><code>&lt;=&gt;(other : Vector) : Int32?</code></td>
+<td>Orders by <code>base_score</code>. Returns <code>nil</code> only on NaN (never produced by valid inputs).</td>
+</tr>
+<tr>
+<td><code>==(other : Vector) : Bool</code></td>
+<td>Default returns <code>false</code>; subclasses override with structural equality.</td>
+</tr>
+<tr>
+<td><code>inspect(io : IO) : Nil</code></td>
+<td>Outputs <code>#&lt;CVSS::V3::Vector CVSS:3.1/... base=9.8&gt;</code>.</td>
+</tr>
+<tr>
+<td><code>to_json(json : JSON::Builder) : Nil</code></td>
+<td>Emits an NVD-shaped JSON object.</td>
+</tr>
+</tbody>
+</table>
+<h2 id="top-level-helpers">Top-level helpers</h2>
+<table>
+<thead>
+<tr>
+<th>Method</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>CVSS.parse(input : String) : Vector</code></td>
+<td>Parses any supported version. Raises on failure.</td>
+</tr>
+<tr>
+<td><code>CVSS.parse?(input : String) : Vector?</code></td>
+<td>Returns <code>nil</code> instead of raising.</td>
+</tr>
+<tr>
+<td><code>CVSS.from_json(input : String | IO) : Vector</code></td>
+<td>Reads a flat or NVD-nested JSON payload.</td>
+</tr>
+</tbody>
+</table>
+<h2 id="equality-semantics">Equality semantics</h2>
+<p>Equality is <em>structural</em> and class-aware. Two vectors are <code>==</code> only when:</p>
+<ul>
+<li>They are the same concrete subclass (a v3 vector and a v4 vector are never equal), AND</li>
+<li>Every metric (including the parsed CVSS version for v3) compares equal.</li>
+</ul>
+<p>This contract makes vectors safe to use as <code>Set</code> elements or <code>Hash</code> keys.</p>
+<h2 id="ordering-semantics">Ordering semantics</h2>
+<p><code>&lt;=&gt;</code> compares by <code>base_score</code> only. Two vectors with the same score are equal under <code>&lt;=&gt;</code> (so <code>cmp == 0</code>) but typically <em>not</em> <code>==</code>. This intentional split keeps &quot;are these the same vulnerability description?&quot; (<code>==</code>) separate from &quot;which is more severe?&quot; (<code>&lt;=&gt;</code>).</p>
+
+    <div class="docs-footer">
+      <p>cvss.cr — A Crystal implementation of the Common Vulnerability Scoring System.</p>
+    </div>
+  </main>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+<script>hljs.highlightAll();</script>
+
+<script src="https://cvss.cr.hahwul.com/js/search.js"></script>
+</body>
+</html>

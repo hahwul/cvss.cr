@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="NVD-shaped JSON serialization and classification helpers for filtering">
+  <title>JSON & Filters - cvss.cr</title>
+  <meta property="og:title" content="JSON &amp; Filters">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://cvss.cr.hahwul.com/user-guide/json-and-filters/">
+<meta property="og:description" content="NVD-shaped JSON serialization and classification helpers for filtering">
+<meta property="og:image" content="https://cvss.cr.hahwul.com/og-images/user-guide-json-and-filters.svg">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="JSON &amp; Filters">
+<meta name="twitter:description" content="NVD-shaped JSON serialization and classification helpers for filtering">
+<meta name="twitter:image" content="https://cvss.cr.hahwul.com/og-images/user-guide-json-and-filters.svg">
+  <link rel="stylesheet" href="https://cvss.cr.hahwul.com/css/style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
+  
+  <meta name="apple-mobile-web-app-title" content="cvss.cr" />
+</head>
+<body data-section="user-guide">
+<header class="docs-header">
+  <a href="https://cvss.cr.hahwul.com/" class="logo">cvss.cr <span>Documentation</span></a>
+  <nav>
+    <a href="https://cvss.cr.hahwul.com/user-guide/">User Guide</a>
+    <a href="https://cvss.cr.hahwul.com/api-reference/">API Reference</a>
+  </nav>
+  <div class="header-right">
+    <button class="search-trigger" onclick="openSearch()" title="Search (⌘K)">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <span>Search</span>
+      <kbd>⌘K</kbd>
+    </button>
+    <a href="https://github.com/hahwul/cvss.cr">GitHub</a>
+  </div>
+</header>
+<div class="search-overlay" id="searchOverlay" onclick="if(event.target===this)closeSearch()">
+  <div class="search-modal">
+    <div class="search-input-wrap">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <input type="text" id="searchInput" placeholder="Search documentation..." autocomplete="off">
+      <kbd onclick="closeSearch()">ESC</kbd>
+    </div>
+    <div class="search-results" id="searchResults"></div>
+  </div>
+</div>
+<div class="docs-container">
+  <aside class="docs-sidebar">
+    <a href="https://cvss.cr.hahwul.com/" class="sidebar-logo">
+      <strong>cvss.cr</strong>
+    </a>
+    <div class="sidebar-section">
+      <div class="sidebar-title">User Guide</div>
+      <ul class="sidebar-links">
+        <li><a href="https://cvss.cr.hahwul.com/user-guide/getting-started/">Getting Started</a></li>
+        <li><a href="https://cvss.cr.hahwul.com/user-guide/basic-usage/">Basic Usage</a></li>
+        <li><a href="https://cvss.cr.hahwul.com/user-guide/scoring/">Scoring &amp; Severity</a></li>
+        <li><a href="https://cvss.cr.hahwul.com/user-guide/json-and-filters/">JSON &amp; Filters</a></li>
+        <li><a href="https://cvss.cr.hahwul.com/user-guide/version-notes/">Version Notes</a></li>
+      </ul>
+    </div>
+    <div class="sidebar-section">
+      <div class="sidebar-title">API Reference</div>
+      <ul class="sidebar-links">
+        <li><a href="https://cvss.cr.hahwul.com/api-reference/vector/">Vector (abstract)</a></li>
+        <li><a href="https://cvss.cr.hahwul.com/api-reference/v2/">CVSS v2.0</a></li>
+        <li><a href="https://cvss.cr.hahwul.com/api-reference/v3/">CVSS v3.x</a></li>
+        <li><a href="https://cvss.cr.hahwul.com/api-reference/v4/">CVSS v4.0</a></li>
+        <li><a href="https://cvss.cr.hahwul.com/api-reference/severity/">Severity</a></li>
+        <li><a href="https://cvss.cr.hahwul.com/api-reference/errors/">Errors</a></li>
+      </ul>
+    </div>
+  </aside>
+  <main class="docs-main">
+    <h1>JSON & Filters</h1>
+    <h2 id="nvd-shaped-json-output">NVD-shaped JSON output</h2>
+<p><code>Vector#to_json</code> produces a payload aligned with the FIRST CVSS JSON Schema and the NVD CVE feed format:</p>
+<pre><code class="language-crystal hljs">require &quot;json&quot;
+
+vec = CVSS.parse(&quot;CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H/E:F/RL:O/RC:C&quot;)
+puts vec.to_json
+</code></pre>
+<pre><code class="language-json hljs">{
+  &quot;version&quot;: &quot;3.1&quot;,
+  &quot;vectorString&quot;: &quot;CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H/E:F/RL:O/RC:C&quot;,
+  &quot;baseScore&quot;: 9.8,
+  &quot;baseSeverity&quot;: &quot;CRITICAL&quot;,
+  &quot;exploitabilityScore&quot;: 3.9,
+  &quot;impactScore&quot;: 5.9,
+  &quot;temporalScore&quot;: 9.1,
+  &quot;temporalSeverity&quot;: &quot;CRITICAL&quot;
+}
+</code></pre>
+<p>Per-version differences:</p>
+<ul>
+<li><strong>v2</strong> and <strong>v3.x</strong> add <code>temporalScore</code>/<code>temporalSeverity</code> and <code>environmentalScore</code>/<code>environmentalSeverity</code> only when the corresponding optional metrics are present in the vector.</li>
+<li><strong>v3.x</strong> always includes <code>exploitabilityScore</code> and <code>impactScore</code> (rounded to one decimal, matching NVD).</li>
+<li><strong>v4.0</strong> adds <code>macroVector</code> instead of separate temporal/environmental fields.</li>
+</ul>
+<h2 id="reading-json">Reading JSON</h2>
+<p><code>CVSS.from_json</code> accepts either:</p>
+<ul>
+<li>a flat object with a <code>vectorString</code> field, or</li>
+<li>an NVD-nested payload (<code>{&quot;cvssData&quot;: {&quot;vectorString&quot;: &quot;...&quot;}}</code>)</li>
+</ul>
+<pre><code class="language-crystal hljs">CVSS.from_json(%({&quot;vectorString&quot;: &quot;CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H&quot;}))
+# =&gt; CVSS::V3::Vector
+
+CVSS.from_json(File.read(&quot;nvd_response.json&quot;))
+</code></pre>
+<p>The library only trusts the <code>vectorString</code> — <code>baseScore</code> and similar fields in the input are ignored, and scores are recomputed from the parsed vector. This makes parsing safe against tampered or stale payloads.</p>
+<h2 id="round-tripping-via-json">Round-tripping via JSON</h2>
+<pre><code class="language-crystal hljs">original    = CVSS.parse(&quot;CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H/E:F&quot;)
+reconstruct = CVSS.from_json(original.to_json)
+reconstruct == original  # =&gt; true
+</code></pre>
+<h2 id="classification-helpers">Classification helpers</h2>
+<p>Predicate methods make filtering large vulnerability lists ergonomic:</p>
+<pre><code class="language-crystal hljs">vec.network?                   # AV:N
+vec.adjacent_network?          # AV:A
+vec.local?                     # AV:L
+vec.physical?                  # AV:P    (v3, v4)
+vec.requires_privileges?       # PR != N (v3, v4)
+vec.requires_authentication?   # Au != N (v2)
+vec.requires_user_interaction? # UI != N
+vec.scope_changed?             # S:C    (v3 only)
+vec.impacts_subsequent_system? # any of SC/SI/SA != N (v4 only)
+vec.impacts_confidentiality?
+vec.impacts_integrity?
+vec.impacts_availability?
+</code></pre>
+<p>Severity predicates come for free from the <code>Severity</code> enum:</p>
+<pre><code class="language-crystal hljs">vec.severity.critical?
+vec.severity &gt;= CVSS::Severity::High
+</code></pre>
+<h2 id="filtering-example">Filtering example</h2>
+<pre><code class="language-crystal hljs">vulns = inputs.map { |s| CVSS.parse(s) }
+
+# All network-reachable, no-privilege issues sorted worst-first
+high_risk = vulns
+  .select { |v| v.responds_to?(:network?) &amp;&amp; v.network? }
+  .reject(&amp;.requires_privileges?)
+  .sort
+  .reverse
+
+# Anything that crosses scope or hits the subsequent system
+crossing = vulns.select do |v|
+  (v.is_a?(CVSS::V3::Vector) &amp;&amp; v.scope_changed?) ||
+    (v.is_a?(CVSS::V4::Vector) &amp;&amp; v.impacts_subsequent_system?)
+end
+</code></pre>
+
+    <div class="docs-footer">
+      <p>cvss.cr — A Crystal implementation of the Common Vulnerability Scoring System.</p>
+    </div>
+  </main>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+<script>hljs.highlightAll();</script>
+
+<script src="https://cvss.cr.hahwul.com/js/search.js"></script>
+</body>
+</html>
