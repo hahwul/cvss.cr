@@ -295,5 +295,73 @@ describe CVSS do
       CVSS::Severity.from_score(7.0).should eq(CVSS::Severity::High)
       CVSS::Severity.from_score(9.0).should eq(CVSS::Severity::Critical)
     end
+
+    # Each band cutoff is on the *upper* boundary inclusive of the next band:
+    # `< 0.1`, `< 4.0`, `< 7.0`, `< 9.0`. The boundary tests below pin those
+    # cutoffs to catch any future `<` vs `<=` regression.
+    it "uses < boundaries for v3/v4 severity bands" do
+      CVSS::Severity.from_score(0.05).should eq(CVSS::Severity::None) # below 0.1
+      CVSS::Severity.from_score(0.1).should eq(CVSS::Severity::Low)
+      CVSS::Severity.from_score(3.99).should eq(CVSS::Severity::Low)
+      CVSS::Severity.from_score(4.0).should eq(CVSS::Severity::Medium)
+      CVSS::Severity.from_score(6.99).should eq(CVSS::Severity::Medium)
+      CVSS::Severity.from_score(7.0).should eq(CVSS::Severity::High)
+      CVSS::Severity.from_score(8.99).should eq(CVSS::Severity::High)
+      CVSS::Severity.from_score(9.0).should eq(CVSS::Severity::Critical)
+      CVSS::Severity.from_score(10.0).should eq(CVSS::Severity::Critical)
+    end
+
+    it "uses the legacy v2 banding (no Critical) at 7.0+" do
+      CVSS::Severity.from_v2_score(0.0).should eq(CVSS::Severity::None)
+      CVSS::Severity.from_v2_score(3.99).should eq(CVSS::Severity::Low)
+      CVSS::Severity.from_v2_score(4.0).should eq(CVSS::Severity::Medium)
+      CVSS::Severity.from_v2_score(6.99).should eq(CVSS::Severity::Medium)
+      CVSS::Severity.from_v2_score(7.0).should eq(CVSS::Severity::High)
+      CVSS::Severity.from_v2_score(10.0).should eq(CVSS::Severity::High)
+    end
+
+    it "is ordered: Critical > High > Medium > Low > None" do
+      (CVSS::Severity::Critical > CVSS::Severity::High).should be_true
+      (CVSS::Severity::High > CVSS::Severity::Medium).should be_true
+      (CVSS::Severity::Medium > CVSS::Severity::Low).should be_true
+      (CVSS::Severity::Low > CVSS::Severity::None).should be_true
+    end
+  end
+
+  describe "Whitespace handling" do
+    it "strips leading and trailing whitespace from any version" do
+      CVSS.parse("  CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H  ").base_score.should eq(9.8)
+      CVSS.parse("\nCVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:H/VI:H/VA:H/SC:N/SI:N/SA:N\t").base_score.should eq(9.3)
+      CVSS.parse(" AV:N/AC:L/Au:N/C:P/I:P/A:P ").base_score.should eq(7.5)
+    end
+
+    it "rejects whitespace inside a metric value" do
+      CVSS.parse?("CVSS:3.1/AV: N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H").should be_nil
+    end
+  end
+
+  describe "Round-trip via JSON across diverse vectors" do
+    it "parse → to_json → from_json preserves the vector" do
+      [
+        # v2.0 base + temporal + environmental
+        "AV:N/AC:L/Au:N/C:C/I:C/A:C/E:F/RL:OF/RC:C/CDP:LM/TD:H/CR:H/IR:M/AR:L",
+        # v3.0 with optional metrics
+        "CVSS:3.0/AV:N/AC:H/PR:N/UI:N/S:U/C:H/I:H/A:H/E:F/RL:O/RC:C",
+        # v3.1 base only
+        "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
+        # v3.1 environmental override
+        "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H/CR:H/IR:H/AR:M/MAV:A/MAC:H/MPR:N/MUI:N/MS:U/MC:H/MI:N/MA:N",
+        # v4.0 base
+        "CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:H/VI:H/VA:H/SC:N/SI:N/SA:N",
+        # v4.0 fully loaded
+        "CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:H/VI:H/VA:H/SC:N/SI:N/SA:N/E:A/CR:H/IR:H/AR:H/MAV:N/MSI:S/U:Red",
+      ].each do |s|
+        original = CVSS.parse(s)
+        reconstructed = CVSS.from_json(original.to_json)
+        reconstructed.should eq(original)
+        reconstructed.to_s.should eq(original.to_s)
+        reconstructed.base_score.should eq(original.base_score)
+      end
+    end
   end
 end

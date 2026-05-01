@@ -161,7 +161,8 @@ describe CVSS::V3::Vector do
       v30 = parse("CVSS:3.0/" + tail)
       v31 = parse("CVSS:3.1/" + tail)
       # v3.0 uses (iss-0.02)^15; v3.1 uses (iss*0.9731-0.02)^13.
-      v30.environmental_score.should_not eq(v31.environmental_score)
+      v30.environmental_score.should eq(9.9)
+      v31.environmental_score.should eq(10.0)
     end
   end
 

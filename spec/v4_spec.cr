@@ -74,6 +74,28 @@ describe CVSS::V4::Vector do
     end
   end
 
+  describe "Lookup integrity (representative macro regions)" do
+    # Each row pins (parsed macro vector, final base_score) for a vector
+    # chosen to land in a different EQ region — a guard against accidental
+    # corruption of the 270-entry lookup table or the depth-distance
+    # correction algorithm.
+    it "matches the FIRST lookup table for diverse inputs" do
+      [
+        # {vector, expected macro, expected score}
+        {"CVSS:4.0/AV:P/AC:H/AT:P/PR:H/UI:A/VC:N/VI:L/VA:L/SC:N/SI:N/SA:N", "212201", 1.0},
+        {"CVSS:4.0/AV:A/AC:L/AT:N/PR:L/UI:P/VC:L/VI:L/VA:L/SC:H/SI:H/SA:N", "202101", 4.4},
+        {"CVSS:4.0/AV:L/AC:H/AT:P/PR:H/UI:A/VC:H/VI:N/VA:N/SC:N/SI:N/SA:N", "211200", 4.1},
+        {"CVSS:4.0/AV:N/AC:H/AT:P/PR:N/UI:N/VC:H/VI:H/VA:H/SC:H/SI:H/SA:H/E:A/CR:H/IR:H/AR:H/MSI:S/MSA:S", "010000", 9.9},
+        {"CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:N/VI:N/VA:H/SC:N/SI:N/SA:N", "001200", 8.7},
+        {"CVSS:4.0/AV:N/AC:L/AT:N/PR:L/UI:P/VC:L/VI:L/VA:N/SC:N/SI:N/SA:N/E:P", "102211", 2.0},
+      ].each do |(vector_string, expected_macro, expected_score)|
+        v = parse(vector_string)
+        v.macro_vector.should eq(expected_macro)
+        v.base_score.should eq(expected_score)
+      end
+    end
+  end
+
   describe "metric_value" do
     it "returns short codes for base metrics" do
       v = parse("CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:H/VI:H/VA:H/SC:N/SI:N/SA:N")
