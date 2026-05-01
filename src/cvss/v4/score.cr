@@ -153,10 +153,10 @@ module CVSS::V4
         n_lower += 1
         normalized += (value - avail) * (cur_sd_eq4 / max_sev_eq4)
       end
-      if (_avail = score_eq5_lower)
-        # EQ5 percent is hardcoded to 0 in the spec — still counts for n_lower.
-        n_lower += 1
-      end
+      # EQ5's normalised contribution is always zero (spec hardcodes the
+      # percent to 0), but having a lower neighbour still counts toward
+      # `n_lower` and so dilutes the mean — pulling the score down.
+      n_lower += 1 if score_eq5_lower
 
       mean_distance = n_lower == 0 ? 0.0 : normalized / n_lower
       result = value - mean_distance

@@ -90,8 +90,8 @@ module CVSS::V3
   class Vector < CVSS::Vector
     protected def write_json_fields(json : ::JSON::Builder) : Nil
       super
-      json.field "exploitabilityScore", round1(exploitability_subscore)
-      json.field "impactScore", round1(impact_subscore)
+      json.field "exploitabilityScore", CVSS.round1(exploitability_subscore)
+      json.field "impactScore", CVSS.round1(impact_subscore)
 
       if @e || @rl || @rc
         ts = temporal_score
@@ -110,10 +110,6 @@ module CVSS::V3
       !(@cr.nil? && @ir.nil? && @ar.nil? &&
         @mav.nil? && @mac.nil? && @mpr.nil? && @mui.nil? && @ms.nil? &&
         @mc.nil? && @mi.nil? && @ma.nil?)
-    end
-
-    private def round1(x : Float64) : Float64
-      ((x * 10.0 + 0.5).floor) / 10.0
     end
   end
 end

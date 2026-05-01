@@ -259,6 +259,32 @@ describe CVSS::V3::Vector do
     end
   end
 
+  describe "metric_value" do
+    it "returns short codes for base metrics" do
+      v = parse("CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H")
+      v.metric_value("AV").should eq("N")
+      v.metric_value("S").should eq("U")
+      v.metric_value("C").should eq("H")
+    end
+
+    it "returns 'X' for unset optional metrics" do
+      v = parse("CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H")
+      v.metric_value("E").should eq("X")
+      v.metric_value("MAV").should eq("X")
+    end
+
+    it "returns the stored code for set optional metrics" do
+      v = parse("CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H/E:F/MAV:L")
+      v.metric_value("E").should eq("F")
+      v.metric_value("MAV").should eq("L")
+    end
+
+    it "raises on unknown metric names" do
+      v = parse("CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H")
+      expect_raises(CVSS::Error, /unknown/) { v.metric_value("ZZ") }
+    end
+  end
+
   describe "to_h" do
     it "returns metric short-codes in canonical order" do
       v = parse("CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H")

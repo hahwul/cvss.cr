@@ -9,14 +9,21 @@ module CVSS
     High
     Critical
 
-    def to_s(io : IO) : Nil
-      io << case self
+    # Explicit override of `Enum#to_s : String`. The defaults *happen* to
+    # match the member names, but defining both branches insulates the
+    # public label from a future enum rename.
+    def to_s : String
+      case self
       in None     then "None"
       in Low      then "Low"
       in Medium   then "Medium"
       in High     then "High"
       in Critical then "Critical"
       end
+    end
+
+    def to_s(io : IO) : Nil
+      io << to_s
     end
 
     # Maps a numeric base score (0.0..10.0) to a CVSS v3.x / v4.0 severity rating.

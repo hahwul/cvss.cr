@@ -4,9 +4,8 @@ module CVSS::V2
   module Score
     extend self
 
-    # Round to one decimal place, half-away-from-zero.
-    def round1(x : Float64) : Float64
-      ((x * 10.0 + 0.5).floor) / 10.0
+    private def round1(x : Float64) : Float64
+      CVSS.round1(x)
     end
 
     private def impact(v : Vector) : Float64

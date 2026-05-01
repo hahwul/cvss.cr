@@ -74,6 +74,29 @@ describe CVSS::V4::Vector do
     end
   end
 
+  describe "metric_value" do
+    it "returns short codes for base metrics" do
+      v = parse("CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:H/VI:H/VA:H/SC:N/SI:N/SA:N")
+      v.metric_value("AV").should eq("N")
+      v.metric_value("VC").should eq("H")
+      v.metric_value("SA").should eq("N")
+    end
+
+    it "returns 'X' for unset optional metrics" do
+      v = parse("CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:H/VI:H/VA:H/SC:N/SI:N/SA:N")
+      v.metric_value("E").should eq("X")
+      v.metric_value("MSI").should eq("X")
+      v.metric_value("U").should eq("X")
+    end
+
+    it "returns the stored code for set optional metrics" do
+      v = parse("CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:H/VI:H/VA:H/SC:N/SI:N/SA:N/E:A/MSI:S/U:Red")
+      v.metric_value("E").should eq("A")
+      v.metric_value("MSI").should eq("S")
+      v.metric_value("U").should eq("Red")
+    end
+  end
+
   describe "Subsequent System impact paths" do
     it "EQ4=1 when SC/SI/SA include H but no Safety override" do
       v = parse("CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:N/VI:N/VA:N/SC:H/SI:H/SA:H")

@@ -130,6 +130,32 @@ describe CVSS::V2::Vector do
     end
   end
 
+  describe "metric_value" do
+    it "returns short codes for base metrics (note 'Au' uses lowercase u)" do
+      v = parse("AV:N/AC:L/Au:N/C:P/I:P/A:P")
+      v.metric_value("AV").should eq("N")
+      v.metric_value("Au").should eq("N")
+      v.metric_value("A").should eq("P")
+    end
+
+    it "returns 'ND' for unset optional metrics (v2 NotDefined code)" do
+      v = parse("AV:N/AC:L/Au:N/C:P/I:P/A:P")
+      v.metric_value("E").should eq("ND")
+      v.metric_value("CDP").should eq("ND")
+    end
+
+    it "returns the stored code for set optional metrics" do
+      v = parse("AV:N/AC:L/Au:N/C:P/I:P/A:P/E:F/CDP:LM")
+      v.metric_value("E").should eq("F")
+      v.metric_value("CDP").should eq("LM")
+    end
+
+    it "raises on unknown metric names" do
+      v = parse("AV:N/AC:L/Au:N/C:P/I:P/A:P")
+      expect_raises(CVSS::Error, /unknown/) { v.metric_value("ZZ") }
+    end
+  end
+
   describe "to_h" do
     it "returns metric short-codes including the lowercase 'Au' key" do
       v = parse("AV:N/AC:L/Au:N/C:P/I:P/A:P")

@@ -4,9 +4,16 @@ module CVSS::V2
   # CVSS v2.0 vector. Format has no `CVSS:x.y/` prefix:
   #   "AV:N/AC:L/Au:N/C:P/I:P/A:P"
   class Vector < CVSS::Vector
-    BASE_ORDER          = %w[AV AC Au C I A]
-    TEMPORAL_ORDER      = %w[E RL RC]
-    ENVIRONMENTAL_ORDER = %w[CDP TD CR IR AR]
+    # Canonical metric ordering used by `to_s`. v2.0 has no `CVSS:x.y/`
+    # prefix, so the first emitted metric appears with no leading separator.
+    METRIC_ORDER = %w[
+      AV AC Au C I A
+      E RL RC
+      CDP TD CR IR AR
+    ]
+
+    # The six required base metrics — `parse` fails if any is missing.
+    BASE_REQUIRED = %w[AV AC Au C I A]
 
     getter av : AccessVector
     getter ac : AccessComplexity
@@ -107,7 +114,7 @@ module CVSS::V2
         end
       end
 
-      missing = BASE_ORDER.reject { |k| seen.includes?(k) }
+      missing = BASE_REQUIRED.reject { |k| seen.includes?(k) }
       unless missing.empty?
         raise ParseError.new("missing required base metric(s): #{missing.join(", ")}")
       end
@@ -146,6 +153,29 @@ module CVSS::V2
 
     def_equals_and_hash @av, @ac, @au, @c, @i, @a,
       @e, @rl, @rc, @cdp, @td, @cr, @ir, @ar
+
+    # Returns the stored short-code for a metric. Optional metrics that have
+    # not been set return `"ND"` (the v2 NotDefined code). Raises
+    # `CVSS::Error` if `name` is not a recognised v2 metric key.
+    def metric_value(name : String) : String
+      case name
+      when "AV"  then @av.code
+      when "AC"  then @ac.code
+      when "Au"  then @au.code
+      when "C"   then @c.code
+      when "I"   then @i.code
+      when "A"   then @a.code
+      when "E"   then @e.try(&.code) || "ND"
+      when "RL"  then @rl.try(&.code) || "ND"
+      when "RC"  then @rc.try(&.code) || "ND"
+      when "CDP" then @cdp.try(&.code) || "ND"
+      when "TD"  then @td.try(&.code) || "ND"
+      when "CR"  then @cr.try(&.code) || "ND"
+      when "IR"  then @ir.try(&.code) || "ND"
+      when "AR"  then @ar.try(&.code) || "ND"
+      else            raise CVSS::Error.new("unknown CVSS v2 metric '#{name}'")
+      end
+    end
 
     # ───── Classification helpers ─────
 
@@ -201,29 +231,30 @@ module CVSS::V2
     end
 
     def to_s(io : IO) : Nil
-      first = true
-      emit = ->(key : String, code : String) do
-        io << '/' unless first
-        first = false
+      emitted = false
+      METRIC_ORDER.each do |key|
+        code =
+          case key
+          when "AV"  then @av.code
+          when "AC"  then @ac.code
+          when "Au"  then @au.code
+          when "C"   then @c.code
+          when "I"   then @i.code
+          when "A"   then @a.code
+          when "E"   then @e.try(&.code)
+          when "RL"  then @rl.try(&.code)
+          when "RC"  then @rc.try(&.code)
+          when "CDP" then @cdp.try(&.code)
+          when "TD"  then @td.try(&.code)
+          when "CR"  then @cr.try(&.code)
+          when "IR"  then @ir.try(&.code)
+          when "AR"  then @ar.try(&.code)
+          end
+        next if code.nil?
+        io << '/' if emitted
+        emitted = true
         io << key << ':' << code
       end
-
-      emit.call("AV", @av.code)
-      emit.call("AC", @ac.code)
-      emit.call("Au", @au.code)
-      emit.call("C", @c.code)
-      emit.call("I", @i.code)
-      emit.call("A", @a.code)
-
-      emit.call("E", @e.not_nil!.code) if @e
-      emit.call("RL", @rl.not_nil!.code) if @rl
-      emit.call("RC", @rc.not_nil!.code) if @rc
-
-      emit.call("CDP", @cdp.not_nil!.code) if @cdp
-      emit.call("TD", @td.not_nil!.code) if @td
-      emit.call("CR", @cr.not_nil!.code) if @cr
-      emit.call("IR", @ir.not_nil!.code) if @ir
-      emit.call("AR", @ar.not_nil!.code) if @ar
     end
   end
 end

@@ -277,6 +277,16 @@ describe CVSS do
     end
   end
 
+  describe "CVSS.round1" do
+    it "rounds half away from zero to one decimal place" do
+      CVSS.round1(7.4499).should eq(7.4)
+      CVSS.round1(7.45).should eq(7.5)
+      CVSS.round1(7.4500001).should eq(7.5)
+      CVSS.round1(0.0).should eq(0.0)
+      CVSS.round1(10.0).should eq(10.0)
+    end
+  end
+
   describe "Severity" do
     it "maps numeric scores to qualitative ratings" do
       CVSS::Severity.from_score(0.0).should eq(CVSS::Severity::None)
