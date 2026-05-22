@@ -29,7 +29,7 @@ nvd = <<-JSON
       "baseSeverity": "CRITICAL"
     }
   }
-JSON
+  JSON
 puts CVSS.from_json(nvd).severity # => Critical
 
 puts "\n--- Filtering with classification helpers ---"

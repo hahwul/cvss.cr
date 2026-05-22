@@ -1,0 +1,51 @@
+Lint/UselessAssign:
+  Excluded:
+    - spec/**
+
+# CVSS metrics are inherently large case/when tables driven by the spec.
+Metrics/CyclomaticComplexity:
+  Excluded:
+    - src/cvss/v3/vector.cr
+    - src/cvss/v3/score.cr
+    - src/cvss/v4/vector.cr
+    - src/cvss/v4/score.cr
+    - src/cvss/v2/vector.cr
+    - src/cvss/v2/score.cr
+
+# `not_nil!` calls are all guarded by `if @ivar` checks.
+Lint/NotNil:
+  Excluded:
+    - src/cvss/v4/vector.cr
+    - src/cvss/v3/vector.cr
+    - src/cvss/v2/vector.cr
+    - spec/**
+
+# Allow `s` as a block parameter (used as short for "string" in .try blocks
+# that parse CVSS metric codes).
+Naming/BlockParameterName:
+  AllowedNames:
+    - _
+    - a
+    - b
+    - c
+    - d
+    - e
+    - i
+    - j
+    - k
+    - m
+    - n
+    - s
+    - t
+    - v
+    - x
+    - y
+    - z
+    - ex
+    - io
+    - id
+    - ip
+    - k1
+    - k2
+    - v1
+    - v2
