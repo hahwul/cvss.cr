@@ -51,11 +51,11 @@ module CVSS::V3
     end
 
     def code : String
-      self.low? ? "L" : "H"
+      low? ? "L" : "H"
     end
 
     def weight : Float64
-      self.low? ? 0.77 : 0.44
+      low? ? 0.77 : 0.44
     end
   end
 
@@ -112,11 +112,11 @@ module CVSS::V3
     end
 
     def code : String
-      self.none? ? "N" : "R"
+      none? ? "N" : "R"
     end
 
     def weight : Float64
-      self.none? ? 0.85 : 0.62
+      none? ? 0.85 : 0.62
     end
   end
 
@@ -133,7 +133,7 @@ module CVSS::V3
     end
 
     def code : String
-      self.unchanged? ? "U" : "C"
+      unchanged? ? "U" : "C"
     end
   end
 
@@ -426,7 +426,7 @@ module CVSS::V3
     end
 
     def weight(base : PrivilegesRequired, modified_scope : Scope) : Float64
-      if self.not_defined?
+      if not_defined?
         base.weight(modified_scope)
       else
         equivalent =

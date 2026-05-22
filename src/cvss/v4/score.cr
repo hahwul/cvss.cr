@@ -137,19 +137,19 @@ module CVSS::V4
       normalized = 0.0
       n_lower = 0
 
-      if (avail = score_eq1_lower)
+      if avail = score_eq1_lower
         n_lower += 1
         normalized += (value - avail) * (cur_sd_eq1 / max_sev_eq1)
       end
-      if (avail = score_eq2_lower)
+      if avail = score_eq2_lower
         n_lower += 1
         normalized += (value - avail) * (cur_sd_eq2 / max_sev_eq2)
       end
-      if (avail = score_eq3eq6_lower)
+      if avail = score_eq3eq6_lower
         n_lower += 1
         normalized += (value - avail) * (cur_sd_eq3eq6 / max_sev_eq3eq6)
       end
-      if (avail = score_eq4_lower)
+      if avail = score_eq4_lower
         n_lower += 1
         normalized += (value - avail) * (cur_sd_eq4 / max_sev_eq4)
       end
@@ -201,7 +201,7 @@ module CVSS::V4
       eq3 =
         if vc == "H" && vi == "H"
           "0"
-        elsif (vc == "H" || vi == "H" || va == "H")
+        elsif vc == "H" || vi == "H" || va == "H"
           "1"
         else
           "2"
@@ -210,7 +210,7 @@ module CVSS::V4
       eq4 =
         if msi == "S" || msa == "S"
           "0"
-        elsif (sc == "H" || si == "H" || sa == "H")
+        elsif sc == "H" || si == "H" || sa == "H"
           "1"
         else
           "2"

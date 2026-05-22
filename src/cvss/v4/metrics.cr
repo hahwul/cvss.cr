@@ -42,7 +42,7 @@ module CVSS::V4
     end
 
     def code : String
-      self.low? ? "L" : "H"
+      low? ? "L" : "H"
     end
   end
 
@@ -59,7 +59,7 @@ module CVSS::V4
     end
 
     def code : String
-      self.none? ? "N" : "P"
+      none? ? "N" : "P"
     end
   end
 
