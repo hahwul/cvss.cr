@@ -57,14 +57,20 @@ module CVSS
 
   private def self.extract_vector_string(json : ::JSON::Any) : String?
     if vs = json["vectorString"]?
-      return vs.as_s
+      return string_field(vs)
     end
     if cvss_data = json["cvssData"]?
       if vs = cvss_data["vectorString"]?
-        return vs.as_s
+        return string_field(vs)
       end
     end
     nil
+  end
+
+  # Coerce a `vectorString` JSON value to a String, raising `ParseError`
+  # (never a raw TypeCastError) when it is null or a non-string type.
+  private def self.string_field(value : ::JSON::Any) : String
+    value.as_s? || raise ParseError.new("vectorString must be a string")
   end
 end
 
