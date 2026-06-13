@@ -238,6 +238,26 @@ describe CVSS do
         CVSS.from_json(%({"vectorString": "CVSS:3.1/AV:N"}))
       end
     end
+
+    it "raises ParseError (not TypeCastError) when vectorString is non-string" do
+      [
+        %({"vectorString": 123}),
+        %({"vectorString": null}),
+        %({"vectorString": [1, 2, 3]}),
+        %({"vectorString": {"x": 1}}),
+        %({"vectorString": true}),
+      ].each do |payload|
+        expect_raises(CVSS::ParseError, /vectorString must be a string/) do
+          CVSS.from_json(payload)
+        end
+      end
+    end
+
+    it "raises ParseError (not TypeCastError) when nested cvssData.vectorString is non-string" do
+      expect_raises(CVSS::ParseError, /vectorString must be a string/) do
+        CVSS.from_json(%({"cvssData": {"vectorString": 123}}))
+      end
+    end
   end
 
   describe "VectorString.split_metrics" do
