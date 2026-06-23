@@ -41,13 +41,11 @@ inputs = [
 ]
 
 inputs.each do |input|
-  begin
-    CVSS.parse(input)
-  rescue CVSS::UnknownVersionError
-    puts "→ unsupported version prefix: #{input[0..14]}…"
-  rescue CVSS::InvalidMetricError
-    puts "→ invalid metric value:        #{input}"
-  rescue CVSS::ParseError
-    puts "→ malformed vector string:     #{input}"
-  end
+  CVSS.parse(input)
+rescue CVSS::UnknownVersionError
+  puts "→ unsupported version prefix: #{input[0..14]}…"
+rescue CVSS::InvalidMetricError
+  puts "→ invalid metric value:        #{input}"
+rescue CVSS::ParseError
+  puts "→ malformed vector string:     #{input}"
 end
