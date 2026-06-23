@@ -27,6 +27,40 @@ module CVSS::V4
 
     STEP = 0.1
 
+    # Pre-parsed max-severity levels per EQ class to avoid runtime string parsing.
+    EQ1_MAX_LEVELS = {
+      0 => [{0.0, 0.0, 0.0}],
+      1 => [{0.1, 0.0, 0.0}, {0.0, 0.1, 0.0}, {0.0, 0.0, 0.1}],
+      2 => [{0.3, 0.0, 0.0}, {0.1, 0.1, 0.1}],
+    }
+
+    EQ2_MAX_LEVELS = {
+      0 => [{0.0, 0.0}],
+      1 => [{0.1, 0.0}, {0.0, 0.1}],
+    }
+
+    EQ3_EQ6_MAX_LEVELS = {
+      0 => {
+        0 => [{0.0, 0.0, 0.0, 0.0, 0.0, 0.0}],
+        1 => [{0.0, 0.0, 0.1, 0.1, 0.1, 0.0}, {0.0, 0.0, 0.0, 0.1, 0.1, 0.1}],
+      },
+      1 => {
+        0 => [{0.1, 0.0, 0.0, 0.0, 0.0, 0.0}, {0.0, 0.1, 0.0, 0.0, 0.0, 0.0}],
+        1 => [{0.1, 0.0, 0.1, 0.0, 0.1, 0.0}, {0.1, 0.0, 0.0, 0.0, 0.1, 0.1},
+              {0.0, 0.1, 0.0, 0.1, 0.0, 0.1}, {0.0, 0.1, 0.1, 0.1, 0.0, 0.0},
+              {0.1, 0.1, 0.0, 0.0, 0.0, 0.1}],
+      },
+      2 => {
+        1 => [{0.1, 0.1, 0.1, 0.0, 0.0, 0.0}],
+      },
+    }
+
+    EQ4_MAX_LEVELS = {
+      0 => [{0.1, 0.0, 0.0}],
+      1 => [{0.1, 0.1, 0.1}],
+      2 => [{0.2, 0.2, 0.2}],
+    }
+
     def score(v : Vector) : Float64
       # Shortcut: no impact at all → 0.0.
       if {"VC", "VI", "VA", "SC", "SI", "SA"}.all? { |m| v.effective_code(m) == "N" }
@@ -73,59 +107,71 @@ module CVSS::V4
       score_eq4_lower = MacroVectorTables::LOOKUP["#{eq1}#{eq2}#{eq3}#{eq4 + 1}#{eq5}#{eq6}"]?
       score_eq5_lower = MacroVectorTables::LOOKUP["#{eq1}#{eq2}#{eq3}#{eq4}#{eq5 + 1}#{eq6}"]?
 
-      # Build cartesian product of max-severity vectors for the current macro.
-      eq1_maxes = MacroVectorTables::EQ1_MAXES[eq1]
-      eq2_maxes = MacroVectorTables::EQ2_MAXES[eq2]
-      eq3_eq6_maxes = MacroVectorTables::EQ3_EQ6_MAXES[eq3][eq6]
-      eq4_maxes = MacroVectorTables::EQ4_MAXES[eq4]
-      eq5_maxes = MacroVectorTables::EQ5_MAXES[eq5]
+      # Pre-evaluate effective code levels once
+      eff_av = AV_LEVELS[v.effective_code("AV")]
+      eff_pr = PR_LEVELS[v.effective_code("PR")]
+      eff_ui = UI_LEVELS[v.effective_code("UI")]
+      eff_ac = AC_LEVELS[v.effective_code("AC")]
+      eff_at = AT_LEVELS[v.effective_code("AT")]
+      eff_vc = VC_LEVELS[v.effective_code("VC")]
+      eff_vi = VI_LEVELS[v.effective_code("VI")]
+      eff_va = VA_LEVELS[v.effective_code("VA")]
+      eff_sc = SC_LEVELS[v.effective_code("SC")]
+      eff_si = SI_LEVELS[v.effective_code("SI")]
+      eff_sa = SA_LEVELS[v.effective_code("SA")]
+      eff_cr = CR_LEVELS[v.effective_code("CR")]
+      eff_ir = IR_LEVELS[v.effective_code("IR")]
+      eff_ar = AR_LEVELS[v.effective_code("AR")]
 
-      max_vectors = [] of String
-      eq1_maxes.each do |a|
-        eq2_maxes.each do |b|
-          eq3_eq6_maxes.each do |c|
-            eq4_maxes.each do |d|
-              eq5_maxes.each do |e|
-                max_vectors << (a + b + c + d + e)
-              end
-            end
-          end
+      # EQ1 severity distance: find the first matching max-level tuple
+      cur_sd_eq1 = 0.0
+      EQ1_MAX_LEVELS[eq1].each do |m_av, m_pr, m_ui|
+        sd_av = eff_av - m_av
+        sd_pr = eff_pr - m_pr
+        sd_ui = eff_ui - m_ui
+        if sd_av >= 0 && sd_pr >= 0 && sd_ui >= 0
+          cur_sd_eq1 = sd_av + sd_pr + sd_ui
+          break
         end
       end
 
-      # Find the first max-vector where every per-metric severity-distance is ≥ 0.
-      sd_av = sd_pr = sd_ui = 0.0
-      sd_ac = sd_at = 0.0
-      sd_vc = sd_vi = sd_va = 0.0
-      sd_sc = sd_si = sd_sa = 0.0
-      sd_cr = sd_ir = sd_ar = 0.0
-
-      max_vectors.each do |mvec|
-        sd_av = AV_LEVELS[v.effective_code("AV")] - AV_LEVELS[extract(mvec, "AV")]
-        sd_pr = PR_LEVELS[v.effective_code("PR")] - PR_LEVELS[extract(mvec, "PR")]
-        sd_ui = UI_LEVELS[v.effective_code("UI")] - UI_LEVELS[extract(mvec, "UI")]
-        sd_ac = AC_LEVELS[v.effective_code("AC")] - AC_LEVELS[extract(mvec, "AC")]
-        sd_at = AT_LEVELS[v.effective_code("AT")] - AT_LEVELS[extract(mvec, "AT")]
-        sd_vc = VC_LEVELS[v.effective_code("VC")] - VC_LEVELS[extract(mvec, "VC")]
-        sd_vi = VI_LEVELS[v.effective_code("VI")] - VI_LEVELS[extract(mvec, "VI")]
-        sd_va = VA_LEVELS[v.effective_code("VA")] - VA_LEVELS[extract(mvec, "VA")]
-        sd_sc = SC_LEVELS[v.effective_code("SC")] - SC_LEVELS[extract(mvec, "SC")]
-        sd_si = SI_LEVELS[v.effective_code("SI")] - SI_LEVELS[extract(mvec, "SI")]
-        sd_sa = SA_LEVELS[v.effective_code("SA")] - SA_LEVELS[extract(mvec, "SA")]
-        sd_cr = CR_LEVELS[v.effective_code("CR")] - CR_LEVELS[extract(mvec, "CR")]
-        sd_ir = IR_LEVELS[v.effective_code("IR")] - IR_LEVELS[extract(mvec, "IR")]
-        sd_ar = AR_LEVELS[v.effective_code("AR")] - AR_LEVELS[extract(mvec, "AR")]
-
-        all_nonneg = [sd_av, sd_pr, sd_ui, sd_ac, sd_at,
-                      sd_vc, sd_vi, sd_va, sd_sc, sd_si, sd_sa,
-                      sd_cr, sd_ir, sd_ar].none? { |x| x < 0 }
-        break if all_nonneg
+      # EQ2 severity distance: find the first matching max-level tuple
+      cur_sd_eq2 = 0.0
+      EQ2_MAX_LEVELS[eq2].each do |m_ac, m_at|
+        sd_ac = eff_ac - m_ac
+        sd_at = eff_at - m_at
+        if sd_ac >= 0 && sd_at >= 0
+          cur_sd_eq2 = sd_ac + sd_at
+          break
+        end
       end
 
-      cur_sd_eq1 = sd_av + sd_pr + sd_ui
-      cur_sd_eq2 = sd_ac + sd_at
-      cur_sd_eq3eq6 = sd_vc + sd_vi + sd_va + sd_cr + sd_ir + sd_ar
-      cur_sd_eq4 = sd_sc + sd_si + sd_sa
+      # EQ3 severity distance: find the first matching max-level tuple
+      cur_sd_eq3eq6 = 0.0
+      EQ3_EQ6_MAX_LEVELS[eq3][eq6].each do |m_vc, m_vi, m_va, m_cr, m_ir, m_ar|
+        sd_vc = eff_vc - m_vc
+        sd_vi = eff_vi - m_vi
+        sd_va = eff_va - m_va
+        sd_cr = eff_cr - m_cr
+        sd_ir = eff_ir - m_ir
+        sd_ar = eff_ar - m_ar
+        if sd_vc >= 0 && sd_vi >= 0 && sd_va >= 0 && sd_cr >= 0 && sd_ir >= 0 && sd_ar >= 0
+          cur_sd_eq3eq6 = sd_vc + sd_vi + sd_va + sd_cr + sd_ir + sd_ar
+          break
+        end
+      end
+
+      # EQ4 severity distance: find the first matching max-level tuple
+      cur_sd_eq4 = 0.0
+      EQ4_MAX_LEVELS[eq4].each do |m_sc, m_si, m_sa|
+        sd_sc = eff_sc - m_sc
+        sd_si = eff_si - m_si
+        sd_sa = eff_sa - m_sa
+        if sd_sc >= 0 && sd_si >= 0 && sd_sa >= 0
+          cur_sd_eq4 = sd_sc + sd_si + sd_sa
+          break
+        end
+      end
 
       # Convert max-severity depths to score units.
       max_sev_eq1 = MacroVectorTables::MAX_SEVERITY_EQ1[eq1] * STEP
@@ -231,15 +277,6 @@ module CVSS::V4
         end
 
       "#{eq1}#{eq2}#{eq3}#{eq4}#{eq5}#{eq6}"
-    end
-
-    # Extract the value of a metric from a "KEY:VAL/KEY:VAL/" fragment.
-    private def extract(fragment : String, metric : String) : String
-      idx = fragment.index(metric + ":")
-      raise CVSS::Error.new("metric #{metric} not in fragment #{fragment}") if idx.nil?
-      after = fragment[(idx + metric.size + 1)..]
-      slash = after.index('/')
-      slash.nil? ? after : after[...slash]
     end
   end
 end
