@@ -4,99 +4,84 @@ This document is for AI agents editing the cvss.cr documentation site under `doc
 
 ## Project Overview
 
-This is a static website built with [Hwaro](https://github.com/hahwul/hwaro), a fast and lightweight static site generator written in Crystal. It is the documentation companion to the [cvss.cr](https://github.com/hahwul/cvss.cr) library.
+This is the documentation companion to [cvss.cr](https://github.com/hahwul/cvss.cr), a Crystal implementation of the Common Vulnerability Scoring System (CVSS). The site is a static site built with [Hwaro](https://github.com/hahwul/hwaro) (Crinja/Jinja2 templates).
+
+It shares a single canonical design system with the docs sites of the sibling libraries (acp.cr, caido.cr, cvss.cr, cwe.cr, epss.cr, fm.cr, kev.cr, purl.cr, sarif.cr, spdx.cr, vex.cr, zap.cr): `templates/` (except the two slot partials), `static/css/style.css`, `static/js/search.js`, and `static/fonts/` are byte-identical across all of them. If you change one of those files here, port the change to every sibling site.
 
 ## Hwaro Usage
 
-### Installation
-
-**Homebrew:**
-```bash
-brew tap hahwul/hwaro
-brew install hwaro
-```
-
-**From Source (Crystal):**
-```bash
-git clone https://github.com/hahwul/hwaro.git
-cd hwaro
-shards install
-shards build --release --no-debug --production
-# Binary: ./bin/hwaro
-```
-
-### Essential Commands
+Run from inside `docs/`:
 
 | Command | Description |
 |---------|-------------|
 | `hwaro build` | Build the site to `public/` |
-| `hwaro serve` | Local dev server with live reload |
-| `hwaro version` | Show version information |
-
-Run from inside `docs/`.
+| `hwaro serve` | Local dev server with live reload (port 3000) |
+| `hwaro doctor` | Sanity-check config and content |
 
 ## Directory Structure
 
 ```
 docs/
-├── config.toml          # Site configuration
-├── content/             # Markdown content
-│   ├── index.md         # Homepage
-│   ├── user-guide/
-│   │   ├── _index.md
-│   │   ├── getting-started.md
-│   │   ├── basic-usage.md
-│   │   ├── scoring.md
-│   │   ├── json-and-filters.md
-│   │   └── version-notes.md
-│   └── api-reference/
-│       ├── _index.md
-│       ├── vector.md
-│       ├── v2.md
-│       ├── v3.md
-│       ├── v4.md
-│       ├── severity.md
-│       └── errors.md
-├── templates/           # Jinja2 (Crinja) templates
-│   ├── header.html
-│   ├── footer.html
-│   ├── page.html
-│   ├── section.html
-│   └── 404.html
-└── static/              # Static assets (CSS, JS, icons)
+├── config.toml            # Site configuration (incl. [og.auto_image] brand colors)
+├── content/               # Markdown content (user-guide/, api-reference/ + index.md)
+├── templates/
+│   ├── header.html        # <head>, no-FOUC theme script, css link
+│   ├── footer.html        # footer, search.js, theme-toggle + mobile-drawer scripts
+│   ├── page.html          # page body + prev/next nav
+│   ├── section.html       # section body + "In This Section" cards
+│   ├── 404.html
+│   ├── taxonomy.html / taxonomy_term.html
+│   ├── partials/
+│   │   ├── nav.html       # top bar: brand, section links, search, theme, GitHub
+│   │   ├── sidebar.html   # DYNAMIC sidebar (loops site.sections, weight-sorted)
+│   │   ├── search.html    # command-K search overlay
+│   │   ├── brand.html     # per-site slot: sidebar logo (empty by default)
+│   │   └── icons.html     # per-site slot: favicons (empty by default)
+│   └── shortcodes/alert.html
+└── static/
+    ├── css/style.css      # design tokens + all component styles
+    ├── js/search.js       # search modal logic
+    └── fonts/             # Geist + Geist Mono (variable woff2, self-hosted)
 ```
+
+## Design System (do not regress these)
+
+- **Theming:** every color is a `light-dark()` token in `:root`. The theme toggle pins a scheme via `data-theme` on `<html>`; auto follows the OS. Never hardcode a color in a component rule - add or reuse a token.
+- **Syntax highlighting** is server-side (Tartrazine, hljs-compatible classes) colored by the `--code-*` tokens in `style.css`. Do **not** re-add `{{ highlight_css }}` to `header.html` - the CDN theme would fight the tokens.
+- **Typography:** Geist (sans) and Geist Mono, self-hosted in `static/fonts/`. Do not add webfont CDN links.
+- **Mobile:** the sidebar becomes a drawer behind the hamburger button under 768px. Keep the drawer script in `footer.html` intact.
+- **No new JS dependencies.** The site uses only `static/js/search.js` and the inline scripts in `header.html`/`footer.html`.
 
 ## Content Guidelines
 
 ### Front matter
 
-Use TOML front matter:
+TOML front matter delimited by `+++`:
 
 ```toml
 +++
 title = "Page Title"
-description = "Short SEO description"
-weight = 1   # for sort_by = "weight" sections
+description = "Short SEO description (also rendered as the page lede)"
+weight = 1
 +++
 ```
 
-### Editing rules
-
 - **Always preserve front matter** when editing.
-- Keep terminology consistent with the library: "Vector", "metric", "macro vector", "Severity", "base score".
-- Cross-link generously between User Guide pages and API Reference pages.
-- Code samples must be valid Crystal that runs against the latest cvss.cr — when in doubt, copy from the working examples in the repo's `examples/` directory.
+- `description` renders under the h1 as the page lede and on section cards - keep it one sentence, informative, no trailing period needed.
+- Cross-link generously between pages. **Keep URLs relative** - `{{ base_url }}/...` in templates, `/section/page/` in markdown links.
 
 ### Adding a new page
 
-1. Create the `.md` under `content/user-guide/` or `content/api-reference/`.
-2. Add a sidebar entry in **both** `templates/page.html` and `templates/section.html` (the sidebars are duplicated by design — Hwaro does not currently share partials for them in this site).
-3. Include a `weight` value so the section's `sort_by = "weight"` picks up the right ordering.
+1. Create the `.md` under the right section directory with `title`, `description`, and `weight`.
+2. That's it. The sidebar, header nav, section cards, and prev/next links are all generated dynamically from `site.sections` (weight-sorted). **No template edits needed.**
+
+### Editing rules
+
+- Keep terminology consistent with the library: "Vector", "metric", "macro vector", "Severity", "base score".
+- Code samples must be valid Crystal that runs against the latest cvss.cr - copy from the repo's `examples/` directory when in doubt.
 
 ## Notes for AI Agents
 
 1. **Don't invent APIs.** Only document methods that exist in `src/cvss/**`. Verify by grepping the source before adding examples.
-2. **Match score values** in examples to spec output — running `crystal run examples/<file>.cr` prints the expected numbers.
-3. **Use `crystal spec`** (run from the repo root) to confirm any code sample you add still passes type-checking semantically.
-4. **Keep URLs relative** — `{{ base_url }}/...` in templates, `/section/page/` in markdown links.
-5. **Don't add JS dependencies.** The site uses only `static/js/search.js` and Hwaro's auto-included assets.
+2. **Match score values** in examples to spec output - running `crystal run examples/<file>.cr` prints the expected numbers.
+3. **Use `crystal spec`** (from the repo root) to confirm any code sample you add still type-checks semantically.
