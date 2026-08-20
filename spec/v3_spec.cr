@@ -328,5 +328,20 @@ describe CVSS::V3::Vector do
     it "rounds 4.65 up to 4.7 (v3.0 ceiling)" do
       CVSS::V3::Score.roundup30(4.65).should eq(4.7)
     end
+
+    # Deliberate divergence from FIRST's cvsscalc30.js, which implements
+    # RoundUp as `Math.ceil(input * 10) / 10` over raw floats. 5.0 * 0.92 is
+    # exactly 4.6, but binary arithmetic yields 4.6000000000000005 and the
+    # naive ceiling bumps it to 4.7. CVSS v3.1 §7.1 (and Appendix A) call
+    # that out as a bug in float-based RoundUp implementations, so both
+    # roundup30 and roundup31 snap to five decimals before rounding.
+    it "does not bump an exact one-decimal value to the next tenth (v3.0)" do
+      CVSS::V3::Score.roundup30(4.6).should eq(4.6)
+      CVSS::V3::Score.roundup30(5.0 * 0.92).should eq(4.6)
+
+      v30 = parse("CVSS:3.0/AV:P/AC:L/PR:H/UI:R/S:U/C:L/I:L/A:H/RC:U")
+      v30.base_score.should eq(5.0)
+      v30.temporal_score.should eq(4.6)
+    end
   end
 end

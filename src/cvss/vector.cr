@@ -1,9 +1,33 @@
 module CVSS
-  # Round `x` to one decimal place, half-away-from-zero. Used by the v2 and
-  # v3 score formulas (the v4 algorithm rounds inline). Centralised here so
-  # the score module and the JSON serialiser cannot drift apart.
+  # Largest magnitude whose five-decimal integer snap still fits in an
+  # `Int64` (`Int64::MAX` is ~9.2233e18, so the snap tops out just above
+  # 9.2233e13); rounded down for headroom.
+  ROUND1_SNAP_LIMIT = 9.0e13
+
+  # Round `x` to one decimal place. Ties break *upwards*, i.e. toward
+  # positive infinity rather than away from zero — `round1(0.15)` is `0.2`
+  # and `round1(-0.15)` is `-0.1`. CVSS scores are non-negative, so only the
+  # positive half is ever exercised. Used by the v2 score formulas
+  # (`round_to_1_decimal` in the CVSS v2 guide) and by the JSON serialiser
+  # for the v3 exploitability/impact sub-scores. Centralised here so the
+  # score module and the JSON serialiser cannot drift apart.
+  #
+  # The value is first snapped to five decimal places in integer space. A
+  # naive `(x * 10 + 0.5).floor` reads `3.0 * 0.95` as 2.8499999999999996
+  # and rounds it down to 2.8, where the arithmetic the spec describes gives
+  # 2.85 → 2.9. This is the same binary-representation trap CVSS v3.1 §7.1
+  # (and its Appendix A) works around in `Roundup`.
   def self.round1(x : Float64) : Float64
-    ((x * 10.0 + 0.5).floor) / 10.0
+    # NaN and ±Infinity have no one-decimal form to snap to, and every input
+    # past `ROUND1_SNAP_LIMIT` would overflow `to_i64`. Scoring never reaches
+    # either, but `round1` is public, so degrade instead of letting a raw
+    # `OverflowError` escape. Above the limit a Float64 carries no fractional
+    # part anyway, which is all the snap exists to correct.
+    return x if x.nan? || x.infinite?
+    return ((x * 10.0 + 0.5).floor) / 10.0 if x.abs >= ROUND1_SNAP_LIMIT
+
+    scaled = (x * 100_000.0).round.to_i64
+    ((scaled + 5_000) // 10_000).to_f / 10.0
   end
 
   # Common interface for every CVSS vector implementation.

@@ -50,7 +50,11 @@ module CVSS::V2
       adjusted_base = round1(((0.6 * adjusted_impact) + (0.4 * exploitability(v)) - 1.5) * f_impact(adjusted_impact))
       adjusted_temporal = round1(adjusted_base * e * rl * rc)
 
-      round1((adjusted_temporal + (10.0 - adjusted_temporal) * cdp) * td)
+      # A CR/IR/AR requirement below "Medium" shrinks AdjustedImpact enough
+      # that the base sub-equation can go below zero (e.g.
+      # AV:L/AC:H/Au:M/C:P/I:N/A:N/CR:L). CVSS v2 scores are defined on the
+      # 0.0–10.0 range (guide §2), so the result is floored at 0.0.
+      {0.0, round1((adjusted_temporal + (10.0 - adjusted_temporal) * cdp) * td)}.max
     end
   end
 end

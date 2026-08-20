@@ -384,6 +384,17 @@ module CVSS::V4
       Severity.from_score(base_score)
     end
 
+    # Threat / environmental severity ratings. Like the score aliases above
+    # these collapse onto the single v4.0 rating; they exist so callers can
+    # use the same `*_severity` accessors the v2 and v3 vectors expose.
+    def threat_severity : Severity
+      severity
+    end
+
+    def environmental_severity : Severity
+      severity
+    end
+
     # The 6-character MacroVector this vector falls into. Concatenates
     # `EQ1 EQ2 EQ3 EQ4 EQ5 EQ6` digits as defined in the CVSS v4.0 spec.
     #

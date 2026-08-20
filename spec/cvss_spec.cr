@@ -305,6 +305,54 @@ describe CVSS do
       CVSS.round1(0.0).should eq(0.0)
       CVSS.round1(10.0).should eq(10.0)
     end
+
+    # Binary floating point cannot represent these products exactly, so a
+    # naive `(x * 10 + 0.5).floor` sees them as a hair *below* the .x5
+    # boundary and rounds down. The spec arithmetic lands exactly on the
+    # boundary and must round up — the same trap CVSS v3.1 §7.1 documents.
+    it "rounds up products that binary arithmetic nudges below the boundary" do
+      (3.0 * 0.95).should be < 2.85 # 2.8499999999999996
+      CVSS.round1(3.0 * 0.95).should eq(2.9)
+
+      (9.0 * 0.95).should be < 8.55 # 8.549999999999999
+      CVSS.round1(9.0 * 0.95).should eq(8.6)
+
+      CVSS.round1(2.85).should eq(2.9)
+      CVSS.round1(8.35).should eq(8.4)
+    end
+
+    it "still rounds down when the value is genuinely below the boundary" do
+      CVSS.round1(2.8499).should eq(2.8)
+      CVSS.round1(2.84999).should eq(2.8)
+    end
+
+    # `round1` is public. The five-decimal snap goes through `to_i64`, which
+    # raises OverflowError on non-finite input and on anything past
+    # ~9.2233e13 (Int64::MAX / 100_000). No scoring path can reach those, but
+    # a raw stdlib exception must never escape a public method.
+    it "returns non-finite input unchanged instead of raising" do
+      CVSS.round1(Float64::NAN).nan?.should be_true
+      CVSS.round1(Float64::INFINITY).should eq(Float64::INFINITY)
+      CVSS.round1(-Float64::INFINITY).should eq(-Float64::INFINITY)
+    end
+
+    it "falls back to the float path past the Int64 snap boundary" do
+      [1.0e14, 9.3e13, -1.0e14, 1.0e300, -1.0e300, Float64::MAX].each do |x|
+        CVSS.round1(x).should be_a(Float64)
+      end
+      CVSS.round1(1.0e300).should eq(1.0e300)
+      CVSS.round1(1.0e14).should eq(1.0e14)
+    end
+
+    it "still snaps just inside the boundary" do
+      CVSS.round1(CVSS::ROUND1_SNAP_LIMIT - 1.0).should be_a(Float64)
+    end
+
+    it "breaks ties upwards, not away from zero" do
+      CVSS.round1(0.15).should eq(0.2)
+      CVSS.round1(-0.15).should eq(-0.1)
+      CVSS.round1(-0.16).should eq(-0.2)
+    end
   end
 
   describe "Severity" do
