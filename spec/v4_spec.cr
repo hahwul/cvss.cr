@@ -67,6 +67,15 @@ describe CVSS::V4::Vector do
       lo.base_score.should be < hi.base_score
     end
 
+    it "exposes threat / environmental severity like the v2 and v3 vectors" do
+      v = parse("CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:H/VI:H/VA:H/SC:N/SI:N/SA:N/E:U")
+      v.threat_score.should eq(v.base_score)
+      v.environmental_score.should eq(v.base_score)
+      v.severity.should eq(CVSS::Severity::High)
+      v.threat_severity.should eq(v.severity)
+      v.environmental_severity.should eq(v.severity)
+    end
+
     it "honors a Modified base override" do
       base = parse("CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:H/VI:H/VA:H/SC:N/SI:N/SA:N")
       patched = parse("CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:H/VI:H/VA:H/SC:N/SI:N/SA:N/MAV:P")
