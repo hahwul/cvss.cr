@@ -305,6 +305,26 @@ describe CVSS do
       CVSS.round1(0.0).should eq(0.0)
       CVSS.round1(10.0).should eq(10.0)
     end
+
+    # Binary floating point cannot represent these products exactly, so a
+    # naive `(x * 10 + 0.5).floor` sees them as a hair *below* the .x5
+    # boundary and rounds down. The spec arithmetic lands exactly on the
+    # boundary and must round up — the same trap CVSS v3.1 §7.1 documents.
+    it "rounds up products that binary arithmetic nudges below the boundary" do
+      (3.0 * 0.95).should be < 2.85 # 2.8499999999999996
+      CVSS.round1(3.0 * 0.95).should eq(2.9)
+
+      (9.0 * 0.95).should be < 8.55 # 8.549999999999999
+      CVSS.round1(9.0 * 0.95).should eq(8.6)
+
+      CVSS.round1(2.85).should eq(2.9)
+      CVSS.round1(8.35).should eq(8.4)
+    end
+
+    it "still rounds down when the value is genuinely below the boundary" do
+      CVSS.round1(2.8499).should eq(2.8)
+      CVSS.round1(2.84999).should eq(2.8)
+    end
   end
 
   describe "Severity" do

@@ -1,9 +1,17 @@
 module CVSS
-  # Round `x` to one decimal place, half-away-from-zero. Used by the v2 and
-  # v3 score formulas (the v4 algorithm rounds inline). Centralised here so
-  # the score module and the JSON serialiser cannot drift apart.
+  # Round `x` to one decimal place, half-up. Used by the v2 score formulas
+  # (`round_to_1_decimal` in the CVSS v2 guide) and by the JSON serialiser
+  # for the v3 exploitability/impact sub-scores. Centralised here so the
+  # score module and the JSON serialiser cannot drift apart.
+  #
+  # The value is first snapped to five decimal places in integer space. A
+  # naive `(x * 10 + 0.5).floor` reads `3.0 * 0.95` as 2.8499999999999996
+  # and rounds it down to 2.8, where the arithmetic the spec describes gives
+  # 2.85 → 2.9. This is the same binary-representation trap CVSS v3.1 §7.1
+  # (and its Appendix A) works around in `Roundup`.
   def self.round1(x : Float64) : Float64
-    ((x * 10.0 + 0.5).floor) / 10.0
+    scaled = (x * 100_000.0).round.to_i64
+    ((scaled + 5_000) // 10_000).to_f / 10.0
   end
 
   # Common interface for every CVSS vector implementation.
