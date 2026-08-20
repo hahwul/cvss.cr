@@ -69,6 +69,16 @@ describe CVSS::V2::Vector do
       # 10.0 * 0.95 * 0.87 * 1.0 = 8.265 → 8.3
       v.temporal_score.should eq(8.3)
     end
+
+    # `round_to_1_decimal` in the CVSS v2 guide is exact decimal arithmetic:
+    # 3.0 * 0.95 is 2.85, which rounds up to 2.9. In binary floating point
+    # the product is 2.8499999999999996, so a naive round-half-up truncates
+    # it to 2.8. Cross-checked against the FIRST v2 calculator.
+    it "rounds a temporal product that lands exactly on the .x5 boundary" do
+      v = parse("AV:L/AC:M/Au:S/C:N/I:P/A:P/E:F")
+      v.base_score.should eq(3.0)
+      v.temporal_score.should eq(2.9)
+    end
   end
 
   describe ".parse?" do
@@ -106,6 +116,26 @@ describe CVSS::V2::Vector do
     it "matches base score when no env metrics are set" do
       v = parse("AV:N/AC:L/Au:N/C:P/I:P/A:P")
       v.environmental_score.should eq(v.base_score)
+    end
+
+    # AdjustedImpact scales C/I/A by CR/IR/AR, so a low security requirement
+    # can push `(0.6*AdjustedImpact)+(0.4*Exploitability)-1.5` below zero.
+    # CVSS v2 scores live on 0.0–10.0 (guide §2) — and the FIRST CVSS JSON
+    # schema rejects anything outside that range — so the result is floored.
+    it "never returns a negative environmental score" do
+      v = parse("AV:L/AC:H/Au:M/C:P/I:N/A:N/CR:L")
+      v.environmental_score.should eq(0.0)
+      v.environmental_severity.should eq(CVSS::Severity::None)
+
+      v2 = parse("AV:L/AC:H/Au:M/C:N/I:N/A:P/E:H/RL:TF/RC:UR/CR:L/IR:M/AR:L")
+      v2.environmental_score.should eq(0.0)
+    end
+
+    it "keeps a low-but-positive environmental score intact" do
+      # Same shape, CR:H instead of CR:L — the score stays above zero and is
+      # not clamped. Cross-checked against the FIRST v2 calculator.
+      v = parse("AV:N/AC:L/Au:N/C:C/I:C/A:C/E:H/RL:U/RC:UR/CDP:LM/TD:M/CR:L/IR:ND/AR:H")
+      v.environmental_score.should eq(7.2)
     end
   end
 
