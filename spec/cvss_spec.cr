@@ -325,6 +325,34 @@ describe CVSS do
       CVSS.round1(2.8499).should eq(2.8)
       CVSS.round1(2.84999).should eq(2.8)
     end
+
+    # `round1` is public. The five-decimal snap goes through `to_i64`, which
+    # raises OverflowError on non-finite input and on anything past
+    # ~9.2233e13 (Int64::MAX / 100_000). No scoring path can reach those, but
+    # a raw stdlib exception must never escape a public method.
+    it "returns non-finite input unchanged instead of raising" do
+      CVSS.round1(Float64::NAN).nan?.should be_true
+      CVSS.round1(Float64::INFINITY).should eq(Float64::INFINITY)
+      CVSS.round1(-Float64::INFINITY).should eq(-Float64::INFINITY)
+    end
+
+    it "falls back to the float path past the Int64 snap boundary" do
+      [1.0e14, 9.3e13, -1.0e14, 1.0e300, -1.0e300, Float64::MAX].each do |x|
+        CVSS.round1(x).should be_a(Float64)
+      end
+      CVSS.round1(1.0e300).should eq(1.0e300)
+      CVSS.round1(1.0e14).should eq(1.0e14)
+    end
+
+    it "still snaps just inside the boundary" do
+      CVSS.round1(CVSS::ROUND1_SNAP_LIMIT - 1.0).should be_a(Float64)
+    end
+
+    it "breaks ties upwards, not away from zero" do
+      CVSS.round1(0.15).should eq(0.2)
+      CVSS.round1(-0.15).should eq(-0.1)
+      CVSS.round1(-0.16).should eq(-0.2)
+    end
   end
 
   describe "Severity" do
