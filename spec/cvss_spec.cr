@@ -26,6 +26,31 @@ describe CVSS do
       vec.base_score.should eq(9.3)
     end
 
+    it "dispatches a parenthesised string to V1::Vector" do
+      vec = CVSS.parse("(AV:R/AC:L/Au:NR/C:C/I:C/A:C/B:N)")
+      vec.should be_a(CVSS::V1::Vector)
+      vec.version.should eq("1.0")
+      vec.base_score.should eq(10.0)
+    end
+
+    it "dispatches an unparenthesised v1 vector on its Impact Bias metric" do
+      vec = CVSS.parse("AV:R/AC:L/Au:NR/C:C/I:C/A:C/B:N")
+      vec.should be_a(CVSS::V1::Vector)
+      vec.version.should eq("1.0")
+    end
+
+    it "dispatches an explicit CVSS:1.0/ prefix to V1::Vector" do
+      vec = CVSS.parse("CVSS:1.0/(AV:R/AC:L/Au:NR/C:C/I:C/A:C/B:N)")
+      vec.should be_a(CVSS::V1::Vector)
+      vec.base_score.should eq(10.0)
+    end
+
+    it "reports a truncated v1 vector as a v1 parse error" do
+      expect_raises(CVSS::ParseError, /unbalanced/) do
+        CVSS.parse("(AV:R/AC:L/Au:NR/C:C/I:C/A:C/B:N")
+      end
+    end
+
     it "dispatches a prefix-less string to V2::Vector" do
       vec = CVSS.parse("AV:N/AC:L/Au:N/C:P/I:P/A:P")
       vec.should be_a(CVSS::V2::Vector)
@@ -47,6 +72,7 @@ describe CVSS do
 
     it "round-trips via to_s on every supported version" do
       [
+        "(AV:R/AC:L/Au:NR/C:C/I:C/A:C/B:N)",
         "AV:N/AC:L/Au:N/C:P/I:P/A:P",
         "CVSS:3.0/AV:N/AC:H/PR:N/UI:N/S:U/C:H/I:H/A:H",
         "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",

@@ -1,7 +1,7 @@
 +++
 title = "Errors"
 description = "Error types and exception handling"
-weight = 6
+weight = 7
 +++
 
 ## Overview

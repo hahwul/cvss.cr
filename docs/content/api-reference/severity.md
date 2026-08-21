@@ -1,7 +1,7 @@
 +++
 title = "Severity"
 description = "Qualitative severity rating shared across CVSS versions"
-weight = 5
+weight = 6
 +++
 
 ## `CVSS::Severity`
@@ -24,6 +24,7 @@ Because it is a regular Crystal enum, it gets predicate methods (`s.critical?`, 
 |--------|-------------|
 | `Severity.from_score(score : Float64) : Severity` | Maps a CVSS v3.x or v4.0 base score to a rating. |
 | `Severity.from_v2_score(score : Float64) : Severity` | Uses the legacy CVSS v2.0 banding (no Critical band). |
+| `Severity.from_v1_score(score : Float64) : Severity` | Same banding as `from_v2_score`. CVSS v1.0 defines no ratings of its own; these are the bands NVD labelled v1 scores with. |
 
 ## v3.x / v4.0 banding
 
@@ -35,7 +36,7 @@ Because it is a regular Crystal enum, it gets predicate methods (`s.critical?`, 
 | 7.0 – 8.9  | High     |
 | 9.0 – 10.0 | Critical |
 
-## CVSS v2.0 banding
+## CVSS v1.0 / v2.0 banding
 
 | Score      | Severity |
 |------------|----------|
@@ -44,7 +45,7 @@ Because it is a regular Crystal enum, it gets predicate methods (`s.critical?`, 
 | 4.0 – 6.9  | Medium   |
 | 7.0 – 10.0 | High     |
 
-`0.0 → None` is an extension over the strict v2 spec for consistency with the unified Severity enum. Pass through `from_score` instead of `from_v2_score` if you need v3-style banding.
+`0.0 → None` is an extension over the strict v2 spec for consistency with the unified Severity enum. CVSS v1.0 shares this banding via `from_v1_score`. Pass through `from_score` instead of `from_v2_score` if you need v3-style banding.
 
 ## Examples
 

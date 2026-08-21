@@ -24,9 +24,9 @@ The qualitative `Severity` enum is unified across versions:
 | 7.0 – 8.9  | High     |
 | 9.0 – 10.0 | Critical |
 
-CVSS v2.0 has no Critical band — `v2.severity` returns at most `High`.
+CVSS v1.0 and v2.0 have no Critical band — their `severity` returns at most `High`.
 
-## Temporal & Environmental scores (v2 / v3)
+## Temporal & Environmental scores (v1 / v2 / v3)
 
 ```crystal
 v = CVSS::V3::Vector.parse(

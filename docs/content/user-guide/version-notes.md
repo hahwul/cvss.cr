@@ -4,6 +4,17 @@ description = "Per-version quirks and spec compliance notes"
 weight = 5
 +++
 
+## CVSS v1.0
+
+- **No standardised vector string.** The FIRST v1.0 guide defines metrics and formulas but never a vector notation. This library uses NVD's — parentheses around the metric list, e.g. `(AV:R/AC:L/Au:NR/C:C/I:C/A:C/B:N)` — which is what every v1-era publisher emitted and what NVD documented at `nvd.nist.gov/cvss.cfm?vectorinfo`. `parse` also accepts the list without parentheses and with a `CVSS:1.0/` prefix; `to_s` always emits the canonical parenthesised form.
+- **Impact Bias (`B`) is v1-only.** It re-weights the three impact sub-scores against one another (`Normal` splits them 0.333/0.333/0.333; a biased value gives the favoured impact 0.5 and the other two 0.25 each). v2.0 dropped the metric and reintroduced the idea as the environmental `CR`/`IR`/`AR` requirements. `B` is a *required* base metric — `parse` rejects a vector without it.
+- **Binary base metrics.** `AV` is Remote/Local (no Adjacent Network), and `Au` is Required/Not-Required (no Single/Multiple split). `AV:R`, `Au:NR`, `RL:O`/`RL:T`, and `E:P` are all v1 spellings that mean something different — or nothing — in v2.0.
+- **`RC:Uc`** (Uncorroborated) is written mixed-case in NVD's legend. Upper-case `RC:UC` — the code v2.0 later assigned to *Unconfirmed* — appears in the wild too, so both are accepted on input; `to_s` normalises to `Uc`.
+- **No "Not Defined" values.** Unset temporal metrics score as the neutral 1.0, so `temporal_score` collapses to `base_score`; unset environmental metrics leave `environmental_score` equal to `temporal_score`. `TD:N` still legitimately zeroes the environmental score.
+- **Official-Fix weighs 0.87.** The worked examples in the guide label it "(0.90)" in their summary tables, but only 0.87 — the value in the normative formula section — reproduces the 7.0 / 8.3 / 4.4 results printed beside them.
+- **Severity bands** are NVD's Low/Medium/High; the v1.0 spec defines no qualitative ratings at all. `Severity::None` is returned for `0.0`, and `Critical` never appears.
+- **Environmental vector notation is an extension.** NVD only ever published base and temporal vectors, so `CDP` and `TD` reuse the short codes v2.0 gave them. Vectors that omit them round-trip byte-for-byte either way.
+
 ## CVSS v2.0
 
 - **No prefix in vector strings.** `CVSS.parse` recognises both prefix-less input and an explicit `CVSS:2.0/` prefix (some downstream tools emit the latter for symmetry with v3+).

@@ -4,7 +4,8 @@ require "../src/cvss"
 # Basic Usage
 # =============================================================================
 # CVSS.parse(string) auto-detects the version from the "CVSS:x.y/" prefix.
-# Strings without a prefix are treated as CVSS v2.0.
+# Prefix-less strings are treated as CVSS v2.0, unless they carry a v1.0
+# marker (surrounding parentheses, or the v1-only Impact Bias metric).
 
 puts "--- Auto-detecting the version ---"
 
@@ -16,6 +17,7 @@ puts "Severity: #{vec.severity}"   # => Critical
 
 puts "\n--- Same API across every supported version ---"
 [
+  "(AV:R/AC:L/Au:NR/C:C/I:C/A:C/B:N)",                               # v1.0
   "AV:N/AC:L/Au:N/C:P/I:P/A:P",                                      # v2
   "CVSS:3.0/AV:N/AC:H/PR:N/UI:N/S:U/C:H/I:H/A:H",                    # v3.0
   "CVSS:3.1/AV:L/AC:L/PR:H/UI:N/S:U/C:H/I:H/A:H",                    # v3.1

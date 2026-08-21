@@ -30,7 +30,7 @@ puts vec.to_json
 
 Per-version differences:
 
-- **v2** and **v3.x** add `temporalScore`/`temporalSeverity` and `environmentalScore`/`environmentalSeverity` only when the corresponding optional metrics are present in the vector.
+- **v1.0**, **v2** and **v3.x** add `temporalScore`/`temporalSeverity` and `environmentalScore`/`environmentalSeverity` only when the corresponding optional metrics are present in the vector.
 - **v3.x** always includes `exploitabilityScore` and `impactScore` (rounded to one decimal, matching NVD).
 - **v4.0** adds `macroVector` instead of separate temporal/environmental fields.
 
@@ -68,7 +68,8 @@ vec.adjacent_network?          # AV:A
 vec.local?                     # AV:L
 vec.physical?                  # AV:P    (v3, v4)
 vec.requires_privileges?       # PR != N (v3, v4)
-vec.requires_authentication?   # Au != N (v2)
+vec.requires_authentication?   # Au != N (v2), Au:R (v1)
+vec.remote?                    # AV:R    (v1 only; network? is an alias)
 vec.requires_user_interaction? # UI != N
 vec.scope_changed?             # S:C    (v3 only)
 vec.impacts_subsequent_system? # any of SC/SI/SA != N (v4 only)
