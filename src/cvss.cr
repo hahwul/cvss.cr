@@ -1,11 +1,13 @@
 # A Crystal implementation of the Common Vulnerability Scoring System (CVSS).
 # See: https://www.first.org/cvss/
 #
-# Supported versions: v2.0, v3.0, v3.1, v4.0.
+# Supported versions: v1.0, v2.0, v3.0, v3.1, v4.0.
 require "./cvss/version"
 require "./cvss/error"
 require "./cvss/severity"
 require "./cvss/vector"
+require "./cvss/v1/metrics"
+require "./cvss/v1/vector"
 require "./cvss/v2/metrics"
 require "./cvss/v2/vector"
 require "./cvss/v3/metrics"
@@ -22,6 +24,7 @@ module CVSS
   # ```
   # CVSS.parse("CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H").base_score # => 9.8
   # CVSS.parse("AV:N/AC:L/Au:N/C:P/I:P/A:P").base_score                   # => 7.5
+  # CVSS.parse("(AV:R/AC:L/Au:NR/C:C/I:C/A:C/B:N)").base_score            # => 10.0
   # ```
   def self.parse(input : String) : Vector
     Parser.parse(input)

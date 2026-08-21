@@ -56,7 +56,7 @@ CVSS.parse("CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:H/VI:H/VA:H/SC:N/SI:N/SA:N").ba
 # => 9.3
 
 CVSS.parse("AV:N/AC:L/Au:N/C:P/I:P/A:P").base_score
-# => 7.5  (no prefix → CVSS v2.0)
+# => 7.5  (no prefix, no v1 marker → CVSS v2.0)
 ```
 
 ## Non-raising parse

@@ -8,6 +8,7 @@ Supports every released version of the standard.
 
 | Version  | Status | Notes                                                |
 |----------|--------|------------------------------------------------------|
+| CVSS v1.0 | ✅     | Base + Temporal + Environmental (NVD vector notation) |
 | CVSS v2.0 | ✅     | Base + Temporal + Environmental                      |
 | CVSS v3.0 | ✅     | Base + Temporal + Environmental (legacy RoundUp)     |
 | CVSS v3.1 | ✅     | Base + Temporal + Environmental                      |
@@ -23,7 +24,7 @@ Supports every released version of the standard.
 
 ## Highlights
 
-- Auto-detecting top-level `CVSS.parse(string)` — routes by `CVSS:x.y/` prefix.
+- Auto-detecting top-level `CVSS.parse(string)` — routes by `CVSS:x.y/` prefix, falling back to v1/v2 detection for the prefix-less notations.
 - Strict spec-compliant scoring: v3.1 RoundUp and v4.0 macro-vector tables ported from FIRST's reference implementations.
 - `Comparable(Vector)` — sort and compare by base score across versions.
 - Structural equality + `hash` — vectors work as `Set` / `Hash` keys.

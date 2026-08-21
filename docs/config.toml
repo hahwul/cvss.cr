@@ -67,7 +67,7 @@ rules = []
 [llms]
 enabled = true
 filename = "llms.txt"
-instructions = "This is the documentation for cvss.cr, a Crystal library that parses, scores, and serializes CVSS v2.0 / v3.0 / v3.1 / v4.0 vector strings."
+instructions = "This is the documentation for cvss.cr, a Crystal library that parses, scores, and serializes CVSS v1.0 / v2.0 / v3.0 / v3.1 / v4.0 vector strings."
 full_enabled = false
 full_filename = "llms-full.txt"
 

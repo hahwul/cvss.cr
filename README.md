@@ -6,6 +6,8 @@ for vector strings.
 
 Supported versions:
 
+- **CVSS v1.0** (NVD's parenthesised vector notation, including the
+  v1-only Impact Bias metric)
 - **CVSS v2.0**
 - **CVSS v3.0** / **v3.1**
 - **CVSS v4.0** (full macro-vector lookup; algorithm ported from FIRST's
@@ -29,7 +31,9 @@ Then `shards install`.
 
 `CVSS.parse` inspects the `CVSS:x.y/` prefix and dispatches to the
 appropriate version-specific parser. Vector strings without a prefix are
-treated as CVSS v2.0.
+treated as CVSS v2.0 — unless they carry a v1.0 marker, which is either the
+surrounding parentheses of NVD's v1 notation or the v1-only `B` (Impact
+Bias) metric.
 
 ```crystal
 require "cvss"
@@ -45,6 +49,9 @@ CVSS.parse("AV:N/AC:L/Au:N/C:P/I:P/A:P").base_score
 
 CVSS.parse("CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:H/VI:H/VA:H/SC:N/SI:N/SA:N").base_score
 # => 9.3
+
+CVSS.parse("(AV:R/AC:L/Au:NR/C:C/I:C/A:C/B:N)").base_score
+# => 10.0
 ```
 
 ### Working with a specific version
@@ -59,6 +66,19 @@ v3.temporal_score      # => 9.1
 v3.environmental_score # => 9.1
 v3.av                  # => CVSS::V3::AttackVector::Network
 v3.severity            # => CVSS::Severity::Critical
+```
+
+CVSS v1.0 lives in `CVSS::V1::Vector`. Its vector strings are the ones NVD
+published between 2005 and 2007 — parenthesised, and carrying the v1-only
+`B` (Impact Bias) metric, which re-weights the three impact sub-scores
+against each other:
+
+```crystal
+v1 = CVSS::V1::Vector.parse("(AV:R/AC:L/Au:NR/C:P/I:P/A:C/B:A/E:F/RL:O/RC:C)")
+v1.base_score          # => 8.5
+v1.temporal_score      # => 7.0
+v1.b                   # => CVSS::V1::ImpactBias::Availability
+v1.severity            # => CVSS::Severity::High
 ```
 
 ### Building a vector programmatically
@@ -222,6 +242,8 @@ All exceptions inherit from `CVSS::Error`:
 `CVSS::Severity` is a unified enum (`None`, `Low`, `Medium`, `High`,
 `Critical`) used across all versions. CVSS v2 only defines Low/Medium/High,
 so its `severity` method maps `0.0` to `None` and never returns `Critical`.
+CVSS v1 defines no qualitative ratings at all; it reuses the same
+Low/Medium/High bands NVD labelled v1 scores with.
 
 ## Development
 

@@ -74,6 +74,24 @@ module CVSS
   end
 end
 
+module CVSS::V1
+  class Vector < CVSS::Vector
+    protected def write_json_fields(json : ::JSON::Builder) : Nil
+      super
+      if @e || @rl || @rc
+        ts = temporal_score
+        json.field "temporalScore", ts
+        json.field "temporalSeverity", severity_label(Severity.from_v1_score(ts))
+      end
+      if @cdp || @td
+        es = environmental_score
+        json.field "environmentalScore", es
+        json.field "environmentalSeverity", severity_label(Severity.from_v1_score(es))
+      end
+    end
+  end
+end
+
 module CVSS::V2
   class Vector < CVSS::Vector
     protected def write_json_fields(json : ::JSON::Builder) : Nil

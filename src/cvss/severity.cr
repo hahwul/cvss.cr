@@ -46,5 +46,12 @@ module CVSS
       else             High
       end
     end
+
+    # CVSS v1.0 defines no qualitative ratings at all. NVD nonetheless
+    # labelled v1 scores while it published them, using the same
+    # Low/Medium/High bands it later carried into v2.0 — so v1 reuses them.
+    def self.from_v1_score(score : Float64) : Severity
+      from_v2_score(score)
+    end
   end
 end

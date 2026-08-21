@@ -2,8 +2,8 @@ name: cvss
 version: 0.1.0
 description: |
   A Crystal implementation of the Common Vulnerability Scoring System
-  (CVSS). Parses, scores, and serializes vector strings for v2.0, v3.0,
-  v3.1, and v4.0.
+  (CVSS). Parses, scores, and serializes vector strings for v1.0, v2.0,
+  v3.0, v3.1, and v4.0.
 
 authors:
   - hahwul <hahwul@gmail.com>
