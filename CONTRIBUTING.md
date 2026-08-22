@@ -6,7 +6,7 @@ Thanks for your interest in cvss.cr.
 
 ```sh
 shards install
-crystal spec                # 147 examples
+crystal spec                # 227 examples
 crystal tool format --check
 ```
 
@@ -15,6 +15,28 @@ Run an example end-to-end:
 ```sh
 crystal run examples/basic.cr
 ```
+
+With [just](https://github.com/casey/just) installed, the same tasks are
+available as recipes (`just --list` shows them all):
+
+```sh
+just test          # crystal spec
+just check         # format check + ameba
+just fix           # format + ameba --fix
+just examples      # run every examples/*.cr
+```
+
+## Releasing
+
+Version numbers live in `shard.yml` and `src/cvss/version.cr`. Bump both at
+once and verify they agree:
+
+```sh
+just version-update   # prompts for the new version, writes both files
+just version-check    # fails if the two disagree
+```
+
+Then add the release section to `CHANGELOG.md` and tag the commit.
 
 ## Submitting changes
 
