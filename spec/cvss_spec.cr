@@ -284,6 +284,22 @@ describe CVSS do
         CVSS.from_json(%({"cvssData": {"vectorString": 123}}))
       end
     end
+
+    it "raises ParseError when the payload is valid JSON but not an object" do
+      ["[1, 2, 3]", "null", %("hello"), "42", "true"].each do |payload|
+        expect_raises(CVSS::ParseError, /JSON payload must be a JSON object/) do
+          CVSS.from_json(payload)
+        end
+      end
+    end
+
+    it "raises ParseError when cvssData is not an object" do
+      [%({"cvssData": "x"}), %({"cvssData": [1]}), %({"cvssData": null})].each do |payload|
+        expect_raises(CVSS::ParseError, /cvssData must be a JSON object/) do
+          CVSS.from_json(payload)
+        end
+      end
+    end
   end
 
   describe "VectorString.split_metrics" do

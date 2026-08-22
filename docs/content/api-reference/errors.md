@@ -22,7 +22,7 @@ Exception
 
 | Error | Raised when |
 |-------|-------------|
-| `CVSS::ParseError` | The vector string is malformed: empty input, missing required base metric(s), duplicate metric, unknown metric key, malformed segment, leading/trailing slash, or `from_json` payload missing a `vectorString` field. |
+| `CVSS::ParseError` | The vector string is malformed: empty input, missing required base metric(s), duplicate metric, unknown metric key, malformed segment, leading/trailing slash. Also every structural problem with a `from_json` payload that is still valid JSON: not an object at all (`[…]`, `"…"`, `42`, `null`), a `cvssData` that is not an object, a missing `vectorString` field, or a `vectorString` that is not a string. |
 | `CVSS::InvalidMetricError` | A metric carries a value outside its allowed set (e.g. `AV:Q`). |
 | `CVSS::UnknownVersionError` | The `CVSS:x.y/` prefix references a version this library does not implement (e.g. `CVSS:5.0/...`). |
 
@@ -33,6 +33,8 @@ Exception
 - `JSON::ParseException` — the input is not valid JSON.
 
 This is **not** wrapped in `CVSS::Error`, since it is a structural failure of the input format rather than a CVSS-specific concern. Catch it explicitly when you need to distinguish "bad JSON" from "bad vector string".
+
+`JSON::ParseException` is the *only* non-`CVSS::Error` exception `from_json` raises. Once the input parses as JSON, every remaining problem — including a payload that is not an object — comes back as a `CVSS::ParseError`, so `rescue CVSS::Error | JSON::ParseException` covers untrusted input completely.
 
 ## Usage example
 

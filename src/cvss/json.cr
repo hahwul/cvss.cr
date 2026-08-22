@@ -56,15 +56,28 @@ module CVSS
   end
 
   private def self.extract_vector_string(json : ::JSON::Any) : String?
-    if vs = json["vectorString"]?
+    # `JSON::Any#[]?` raises a bare `Exception` when the value it wraps is
+    # not an object, so every level is unwrapped with `as_h?` first — a
+    # payload of `[…]`, `"…"`, `42` or `null` has to surface as a
+    # `CVSS::ParseError` like any other malformed input.
+    obj = object_field(json, "JSON payload")
+
+    if vs = obj["vectorString"]?
       return string_field(vs)
     end
-    if cvss_data = json["cvssData"]?
-      if vs = cvss_data["vectorString"]?
+    if cvss_data = obj["cvssData"]?
+      nested = object_field(cvss_data, "cvssData")
+      if vs = nested["vectorString"]?
         return string_field(vs)
       end
     end
     nil
+  end
+
+  # Coerce a JSON value to an object, raising `ParseError` (never a raw
+  # `Exception`) when it is any other type.
+  private def self.object_field(value : ::JSON::Any, what : String) : Hash(String, ::JSON::Any)
+    value.as_h? || raise ParseError.new("#{what} must be a JSON object")
   end
 
   # Coerce a `vectorString` JSON value to a String, raising `ParseError`

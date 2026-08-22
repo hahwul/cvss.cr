@@ -148,6 +148,11 @@ v3.impact_subscore           # => 5.873...
 v3.exploitability_subscore   # => 3.887...
 ```
 
+`impact_subscore` is floored at `0.0`: the Scope-Changed polynomial dips
+slightly negative when nothing is impacted, a case `base_score` already
+reports as `0.0`. Use `CVSS::V3::Score.impact(vector)` for the raw
+unclamped value.
+
 ### JSON serialization
 
 `Vector#to_json` produces a payload aligned with the FIRST CVSS JSON Schema

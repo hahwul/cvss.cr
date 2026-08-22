@@ -27,39 +27,50 @@ module CVSS::V4
 
     STEP = 0.1
 
-    # Pre-parsed max-severity levels per EQ class to avoid runtime string parsing.
-    EQ1_MAX_LEVELS = {
-      0 => [{0.0, 0.0, 0.0}],
-      1 => [{0.1, 0.0, 0.0}, {0.0, 0.1, 0.0}, {0.0, 0.0, 0.1}],
-      2 => [{0.3, 0.0, 0.0}, {0.1, 0.1, 0.1}],
-    }
+    # Reads a metric's code out of a `"KEY:VAL/…"` max-severity fragment.
+    private def self.code_in(fragment : String, metric : String) : String
+      fragment.split('/', remove_empty: true).each do |segment|
+        key, _, value = segment.partition(':')
+        return value if key == metric
+      end
+      raise CVSS::Error.new(
+        "metric #{metric} missing from max-severity fragment '#{fragment}'")
+    end
 
-    EQ2_MAX_LEVELS = {
-      0 => [{0.0, 0.0}],
-      1 => [{0.1, 0.0}, {0.0, 0.1}],
-    }
+    # Max-severity levels per EQ class, resolved once at load time so the
+    # per-score path never parses a string.
+    #
+    # These are *derived* from the fragment tables in `MacroVectorTables`
+    # rather than transcribed alongside them: those fragments carry the
+    # provenance ("ported verbatim from the FIRST calculator"), and a second
+    # hand-maintained copy of the same data could silently stop agreeing
+    # with them.
+    EQ1_MAX_LEVELS = MacroVectorTables::EQ1_MAXES.transform_values do |fragments|
+      fragments.map do |f|
+        {AV_LEVELS[code_in(f, "AV")], PR_LEVELS[code_in(f, "PR")], UI_LEVELS[code_in(f, "UI")]}
+      end
+    end
 
-    EQ3_EQ6_MAX_LEVELS = {
-      0 => {
-        0 => [{0.0, 0.0, 0.0, 0.0, 0.0, 0.0}],
-        1 => [{0.0, 0.0, 0.1, 0.1, 0.1, 0.0}, {0.0, 0.0, 0.0, 0.1, 0.1, 0.1}],
-      },
-      1 => {
-        0 => [{0.1, 0.0, 0.0, 0.0, 0.0, 0.0}, {0.0, 0.1, 0.0, 0.0, 0.0, 0.0}],
-        1 => [{0.1, 0.0, 0.1, 0.0, 0.1, 0.0}, {0.1, 0.0, 0.0, 0.0, 0.1, 0.1},
-              {0.0, 0.1, 0.0, 0.1, 0.0, 0.1}, {0.0, 0.1, 0.1, 0.1, 0.0, 0.0},
-              {0.1, 0.1, 0.0, 0.0, 0.0, 0.1}],
-      },
-      2 => {
-        1 => [{0.1, 0.1, 0.1, 0.0, 0.0, 0.0}],
-      },
-    }
+    EQ2_MAX_LEVELS = MacroVectorTables::EQ2_MAXES.transform_values do |fragments|
+      fragments.map do |f|
+        {AC_LEVELS[code_in(f, "AC")], AT_LEVELS[code_in(f, "AT")]}
+      end
+    end
 
-    EQ4_MAX_LEVELS = {
-      0 => [{0.1, 0.0, 0.0}],
-      1 => [{0.1, 0.1, 0.1}],
-      2 => [{0.2, 0.2, 0.2}],
-    }
+    EQ3_EQ6_MAX_LEVELS = MacroVectorTables::EQ3_EQ6_MAXES.transform_values do |by_eq6|
+      by_eq6.transform_values do |fragments|
+        fragments.map do |f|
+          {VC_LEVELS[code_in(f, "VC")], VI_LEVELS[code_in(f, "VI")], VA_LEVELS[code_in(f, "VA")],
+           CR_LEVELS[code_in(f, "CR")], IR_LEVELS[code_in(f, "IR")], AR_LEVELS[code_in(f, "AR")]}
+        end
+      end
+    end
+
+    EQ4_MAX_LEVELS = MacroVectorTables::EQ4_MAXES.transform_values do |fragments|
+      fragments.map do |f|
+        {SC_LEVELS[code_in(f, "SC")], SI_LEVELS[code_in(f, "SI")], SA_LEVELS[code_in(f, "SA")]}
+      end
+    end
 
     def score(v : Vector) : Float64
       # Shortcut: no impact at all → 0.0.

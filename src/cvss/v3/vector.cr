@@ -310,9 +310,17 @@ module CVSS::V3
       Score.iss(self)
     end
 
-    # Impact subscore (after Scope-aware scaling).
+    # Impact subscore (after Scope-aware scaling), floored at 0.0.
+    #
+    # The Scope-Changed branch of the formula dips just below zero when
+    # nothing is impacted — `S:C/C:N/I:N/A:N` gives -0.21808 — a case
+    # `base_score` already collapses to 0.0. Reporting it verbatim would
+    # also push `to_json` outside the FIRST CVSS JSON Schema, which
+    # constrains every score field to 0..10. `CVSS::V3::Score.impact`
+    # still returns the raw unclamped value for callers verifying the
+    # spec formula itself.
     def impact_subscore : Float64
-      Score.impact(self)
+      {0.0, Score.impact(self)}.max
     end
 
     # Exploitability subscore.
