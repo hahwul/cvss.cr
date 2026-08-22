@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Abstract base class shared by every CVSS version">
+  <title>Vector (abstract) - cvss.cr</title>
+  <script>(function(){try{var t=localStorage.getItem("hwaro-theme");if(t==="light"||t==="dark"){document.documentElement.setAttribute("data-theme",t)}}catch(e){}})()</script>
+  <meta property="og:title" content="Vector (abstract)">
+  <meta property="og:type" content="article">
+  <meta property="og:url" content="https://cvss.cr.hahwul.com/api-reference/vector/">
+  <meta property="og:description" content="Abstract base class shared by every CVSS version">
+  <meta property="og:image" content="https://cvss.cr.hahwul.com/og-images/api-reference-vector.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Vector (abstract)">
+  <meta name="twitter:description" content="Abstract base class shared by every CVSS version">
+  <meta name="twitter:image" content="https://cvss.cr.hahwul.com/og-images/api-reference-vector.png">
+  <link rel="canonical" href="https://cvss.cr.hahwul.com/api-reference/vector/">
+  <link rel="stylesheet" href="https://cvss.cr.hahwul.com/css/style.css">
+  
+  <meta name="apple-mobile-web-app-title" content="cvss.cr">
+
+</head>
+<body data-section="api-reference">
+<a class="skip-link" href="#main">Skip to content</a>
+<header class="docs-header">
+  <button class="nav-toggle" type="button" aria-label="Menu" aria-expanded="false" aria-controls="sidebar">
+    <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M2 4.5h12M2 8h12M2 11.5h12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+  </button>
+  <a href="https://cvss.cr.hahwul.com/" class="logo">cvss.cr <span>Documentation</span></a>
+  <nav class="header-nav" aria-label="Sections">
+    <a href="https://cvss.cr.hahwul.com/user-guide/">User Guide</a><a href="https://cvss.cr.hahwul.com/api-reference/" class="active">API Reference</a>
+  </nav>
+  <div class="header-right">
+    <button class="search-trigger" type="button" onclick="openSearch()" title="Search (⌘K)">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <span>Search</span>
+      <kbd>&#8984;K</kbd>
+    </button>
+    <button class="theme-toggle" type="button" data-mode="auto" aria-label="Theme: auto" title="Theme: auto">
+      <svg class="tt-auto" width="15" height="15" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.25" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M8 1.75a6.25 6.25 0 0 1 0 12.5z" fill="currentColor"/></svg>
+      <svg class="tt-light" width="15" height="15" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="3.25" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M8 .9v2M8 13.1v2M.9 8h2M13.1 8h2M2.98 2.98l1.42 1.42M11.6 11.6l1.42 1.42M13.02 2.98L11.6 4.4M4.4 11.6l-1.42 1.42" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+      <svg class="tt-dark" width="15" height="15" viewBox="0 0 16 16" aria-hidden="true"><path d="M13.4 9.9A5.8 5.8 0 0 1 6.1 2.6a5.8 5.8 0 1 0 7.3 7.3z" fill="currentColor"/></svg>
+    </button>
+    <a class="gh-link" href="https://github.com/hahwul/cvss.cr" aria-label="GitHub repository">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/></svg>
+    </a>
+  </div>
+</header>
+<div class="search-overlay" id="searchOverlay" onclick="if(event.target===this)closeSearch()">
+  <div class="search-modal">
+    <div class="search-input-wrap">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <input type="search" id="searchInput" aria-label="Search" placeholder="Search documentation..." autocomplete="off">
+      <kbd onclick="closeSearch()">ESC</kbd>
+    </div>
+    <div class="search-results" id="searchResults"></div>
+  </div>
+</div>
+<div class="docs-container">
+<aside class="docs-sidebar" id="sidebar">
+
+  
+  <div class="sidebar-section">
+    <div class="sidebar-title">User Guide</div>
+    <ul class="sidebar-links">
+      <li><a href="https://cvss.cr.hahwul.com/user-guide/">Overview</a></li>
+      
+      <li><a href="https://cvss.cr.hahwul.com/user-guide/getting-started/">Getting Started</a></li>
+      
+      <li><a href="https://cvss.cr.hahwul.com/user-guide/basic-usage/">Basic Usage</a></li>
+      
+      <li><a href="https://cvss.cr.hahwul.com/user-guide/scoring/">Scoring &amp; Severity</a></li>
+      
+      <li><a href="https://cvss.cr.hahwul.com/user-guide/json-and-filters/">JSON &amp; Filters</a></li>
+      
+      <li><a href="https://cvss.cr.hahwul.com/user-guide/version-notes/">Version Notes</a></li>
+      
+    </ul>
+  </div>
+  
+  <div class="sidebar-section">
+    <div class="sidebar-title">API Reference</div>
+    <ul class="sidebar-links">
+      <li><a href="https://cvss.cr.hahwul.com/api-reference/">Overview</a></li>
+      
+      <li><a href="https://cvss.cr.hahwul.com/api-reference/vector/" class="active" aria-current="page">Vector (abstract)</a></li>
+      
+      <li><a href="https://cvss.cr.hahwul.com/api-reference/v1/">CVSS v1.0</a></li>
+      
+      <li><a href="https://cvss.cr.hahwul.com/api-reference/v2/">CVSS v2.0</a></li>
+      
+      <li><a href="https://cvss.cr.hahwul.com/api-reference/v3/">CVSS v3.x</a></li>
+      
+      <li><a href="https://cvss.cr.hahwul.com/api-reference/v4/">CVSS v4.0</a></li>
+      
+      <li><a href="https://cvss.cr.hahwul.com/api-reference/severity/">Severity</a></li>
+      
+      <li><a href="https://cvss.cr.hahwul.com/api-reference/errors/">Errors</a></li>
+      
+    </ul>
+  </div>
+  
+</aside>
+<div class="sidebar-scrim"></div>
+  <main id="main" class="docs-main">
+    <h1>Vector (abstract)</h1>
+    <p class="lede">Abstract base class shared by every CVSS version</p>
+    <h2 id="cvssvector"><code>CVSS::Vector</code></h2>
+<p>Abstract class. Every concrete vector (<code>CVSS::V2::Vector</code>, <code>CVSS::V3::Vector</code>, <code>CVSS::V4::Vector</code>) inherits from it and implements the abstract methods.</p>
+<p><code>CVSS::Vector</code> <code>include</code>s <code>Comparable(Vector)</code>, so any two vectors can be compared with <code>&lt;</code>, <code>&lt;=</code>, <code>&gt;</code>, <code>&gt;=</code>, <code>clamp</code>, <code>between?</code>, and used with <code>Array#sort</code>.</p>
+<h2 id="abstract-methods">Abstract methods</h2>
+<table>
+<thead>
+<tr>
+<th>Method</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>version : String</code></td>
+<td>Returns <code>&quot;2.0&quot;</code>, <code>&quot;3.0&quot;</code>, <code>&quot;3.1&quot;</code>, or <code>&quot;4.0&quot;</code>.</td>
+</tr>
+<tr>
+<td><code>base_score : Float64</code></td>
+<td>Final, rounded base score in <code>0.0..10.0</code>.</td>
+</tr>
+<tr>
+<td><code>severity : Severity</code></td>
+<td>Qualitative rating (see Severity).</td>
+</tr>
+<tr>
+<td><code>to_s(io : IO) : Nil</code></td>
+<td>Writes the canonical vector string to <code>io</code>.</td>
+</tr>
+</tbody>
+</table>
+<h2 id="concrete-methods">Concrete methods</h2>
+<table>
+<thead>
+<tr>
+<th>Method</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>to_s : String</code></td>
+<td>Returns the canonical vector string.</td>
+</tr>
+<tr>
+<td><code>&lt;=&gt;(other : Vector) : Int32?</code></td>
+<td>Orders by <code>base_score</code>. Returns <code>nil</code> only on NaN (never produced by valid inputs).</td>
+</tr>
+<tr>
+<td><code>==(other : Vector) : Bool</code></td>
+<td>Default returns <code>false</code>; subclasses override with structural equality.</td>
+</tr>
+<tr>
+<td><code>inspect(io : IO) : Nil</code></td>
+<td>Outputs <code>#&lt;CVSS::V3::Vector CVSS:3.1/... base=9.8&gt;</code>.</td>
+</tr>
+<tr>
+<td><code>to_json(json : JSON::Builder) : Nil</code></td>
+<td>Emits an NVD-shaped JSON object.</td>
+</tr>
+</tbody>
+</table>
+<h2 id="top-level-helpers">Top-level helpers</h2>
+<table>
+<thead>
+<tr>
+<th>Method</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>CVSS.parse(input : String) : Vector</code></td>
+<td>Parses any supported version. Raises on failure.</td>
+</tr>
+<tr>
+<td><code>CVSS.parse?(input : String) : Vector?</code></td>
+<td>Returns <code>nil</code> instead of raising.</td>
+</tr>
+<tr>
+<td><code>CVSS.from_json(input : String | IO) : Vector</code></td>
+<td>Reads a flat or NVD-nested JSON payload.</td>
+</tr>
+</tbody>
+</table>
+<h2 id="equality-semantics">Equality semantics</h2>
+<p>Equality is <em>structural</em> and class-aware. Two vectors are <code>==</code> only when:</p>
+<ul>
+<li>They are the same concrete subclass (a v3 vector and a v4 vector are never equal), AND</li>
+<li>Every metric (including the parsed CVSS version for v3) compares equal.</li>
+</ul>
+<p>This contract makes vectors safe to use as <code>Set</code> elements or <code>Hash</code> keys.</p>
+<h2 id="ordering-semantics">Ordering semantics</h2>
+<p><code>&lt;=&gt;</code> compares by <code>base_score</code> only. Two vectors with the same score are equal under <code>&lt;=&gt;</code> (so <code>cmp == 0</code>) but typically <em>not</em> <code>==</code>. This intentional split keeps &quot;are these the same vulnerability description?&quot; (<code>==</code>) separate from &quot;which is more severe?&quot; (<code>&lt;=&gt;</code>).</p>
+
+    
+    <nav class="page-nav" aria-label="Adjacent pages">
+      
+      <a class="page-nav-link page-nav-prev" href="https://cvss.cr.hahwul.com/api-reference/" rel="prev">
+        <span class="page-nav-label">Previous</span>
+        <span class="page-nav-title">API Reference</span>
+      </a>
+      
+      
+      <a class="page-nav-link page-nav-next" href="https://cvss.cr.hahwul.com/api-reference/v1/" rel="next">
+        <span class="page-nav-label">Next</span>
+        <span class="page-nav-title">CVSS v1.0</span>
+      </a>
+      
+    </nav>
+    
+    <div class="docs-footer">
+      <p>cvss.cr documentation</p>
+      <div class="docs-footer-links">
+        <a href="https://github.com/hahwul/cvss.cr">GitHub</a>
+        <a href="https://github.com/hahwul/hwaro">Built with Hwaro</a>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script src="https://cvss.cr.hahwul.com/js/search.js"></script>
+<script>
+(function () {
+  var KEY = "hwaro-theme";
+  var MODES = ["auto", "light", "dark"];
+  var root = document.documentElement;
+  var btn = document.querySelector(".theme-toggle");
+  if (!btn) return;
+  function apply(mode) {
+    if (mode === "auto") {
+      root.removeAttribute("data-theme");
+      try { localStorage.removeItem(KEY); } catch (e) {}
+    } else {
+      root.setAttribute("data-theme", mode);
+      try { localStorage.setItem(KEY, mode); } catch (e) {}
+    }
+    btn.setAttribute("data-mode", mode);
+    btn.setAttribute("aria-label", "Theme: " + mode);
+    btn.title = "Theme: " + mode;
+  }
+  var stored = "auto";
+  try { var t = localStorage.getItem(KEY); if (t === "light" || t === "dark") stored = t; } catch (e) {}
+  btn.addEventListener("click", function () {
+    apply(MODES[(MODES.indexOf(btn.getAttribute("data-mode")) + 1) % MODES.length]);
+  });
+  apply(stored);
+})();
+(function () {
+  var btn = document.querySelector(".nav-toggle");
+  var scrim = document.querySelector(".sidebar-scrim");
+  var sidebar = document.getElementById("sidebar");
+  if (!btn) return;
+  function set(open) {
+    document.body.classList.toggle("nav-open", open);
+    btn.setAttribute("aria-expanded", open ? "true" : "false");
+  }
+  btn.addEventListener("click", function () {
+    set(!document.body.classList.contains("nav-open"));
+  });
+  if (scrim) scrim.addEventListener("click", function () { set(false); });
+  if (sidebar) sidebar.addEventListener("click", function (e) {
+    if (e.target.closest("a")) set(false);
+  });
+  document.addEventListener("keydown", function (e) {
+    if (e.key === "Escape") set(false);
+  });
+})();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="CVSS::V1::Vector class and metric enums">
+  <title>CVSS v1.0 - cvss.cr</title>
+  <script>(function(){try{var t=localStorage.getItem("hwaro-theme");if(t==="light"||t==="dark"){document.documentElement.setAttribute("data-theme",t)}}catch(e){}})()</script>
+  <meta property="og:title" content="CVSS v1.0">
+  <meta property="og:type" content="article">
+  <meta property="og:url" content="https://cvss.cr.hahwul.com/api-reference/v1/">
+  <meta property="og:description" content="CVSS::V1::Vector class and metric enums">
+  <meta property="og:image" content="https://cvss.cr.hahwul.com/og-images/api-reference-v1.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="CVSS v1.0">
+  <meta name="twitter:description" content="CVSS::V1::Vector class and metric enums">
+  <meta name="twitter:image" content="https://cvss.cr.hahwul.com/og-images/api-reference-v1.png">
+  <link rel="canonical" href="https://cvss.cr.hahwul.com/api-reference/v1/">
+  <link rel="stylesheet" href="https://cvss.cr.hahwul.com/css/style.css">
+  
+  <meta name="apple-mobile-web-app-title" content="cvss.cr">
+
+</head>
+<body data-section="api-reference">
+<a class="skip-link" href="#main">Skip to content</a>
+<header class="docs-header">
+  <button class="nav-toggle" type="button" aria-label="Menu" aria-expanded="false" aria-controls="sidebar">
+    <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M2 4.5h12M2 8h12M2 11.5h12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+  </button>
+  <a href="https://cvss.cr.hahwul.com/" class="logo">cvss.cr <span>Documentation</span></a>
+  <nav class="header-nav" aria-label="Sections">
+    <a href="https://cvss.cr.hahwul.com/user-guide/">User Guide</a><a href="https://cvss.cr.hahwul.com/api-reference/" class="active">API Reference</a>
+  </nav>
+  <div class="header-right">
+    <button class="search-trigger" type="button" onclick="openSearch()" title="Search (⌘K)">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <span>Search</span>
+      <kbd>&#8984;K</kbd>
+    </button>
+    <button class="theme-toggle" type="button" data-mode="auto" aria-label="Theme: auto" title="Theme: auto">
+      <svg class="tt-auto" width="15" height="15" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.25" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M8 1.75a6.25 6.25 0 0 1 0 12.5z" fill="currentColor"/></svg>
+      <svg class="tt-light" width="15" height="15" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="3.25" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M8 .9v2M8 13.1v2M.9 8h2M13.1 8h2M2.98 2.98l1.42 1.42M11.6 11.6l1.42 1.42M13.02 2.98L11.6 4.4M4.4 11.6l-1.42 1.42" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+      <svg class="tt-dark" width="15" height="15" viewBox="0 0 16 16" aria-hidden="true"><path d="M13.4 9.9A5.8 5.8 0 0 1 6.1 2.6a5.8 5.8 0 1 0 7.3 7.3z" fill="currentColor"/></svg>
+    </button>
+    <a class="gh-link" href="https://github.com/hahwul/cvss.cr" aria-label="GitHub repository">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/></svg>
+    </a>
+  </div>
+</header>
+<div class="search-overlay" id="searchOverlay" onclick="if(event.target===this)closeSearch()">
+  <div class="search-modal">
+    <div class="search-input-wrap">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <input type="search" id="searchInput" aria-label="Search" placeholder="Search documentation..." autocomplete="off">
+      <kbd onclick="closeSearch()">ESC</kbd>
+    </div>
+    <div class="search-results" id="searchResults"></div>
+  </div>
+</div>
+<div class="docs-container">
+<aside class="docs-sidebar" id="sidebar">
+
+  
+  <div class="sidebar-section">
+    <div class="sidebar-title">User Guide</div>
+    <ul class="sidebar-links">
+      <li><a href="https://cvss.cr.hahwul.com/user-guide/">Overview</a></li>
+      
+      <li><a href="https://cvss.cr.hahwul.com/user-guide/getting-started/">Getting Started</a></li>
+      
+      <li><a href="https://cvss.cr.hahwul.com/user-guide/basic-usage/">Basic Usage</a></li>
+      
+      <li><a href="https://cvss.cr.hahwul.com/user-guide/scoring/">Scoring &amp; Severity</a></li>
+      
+      <li><a href="https://cvss.cr.hahwul.com/user-guide/json-and-filters/">JSON &amp; Filters</a></li>
+      
+      <li><a href="https://cvss.cr.hahwul.com/user-guide/version-notes/">Version Notes</a></li>
+      
+    </ul>
+  </div>
+  
+  <div class="sidebar-section">
+    <div class="sidebar-title">API Reference</div>
+    <ul class="sidebar-links">
+      <li><a href="https://cvss.cr.hahwul.com/api-reference/">Overview</a></li>
+      
+      <li><a href="https://cvss.cr.hahwul.com/api-reference/vector/">Vector (abstract)</a></li>
+      
+      <li><a href="https://cvss.cr.hahwul.com/api-reference/v1/" class="active" aria-current="page">CVSS v1.0</a></li>
+      
+      <li><a href="https://cvss.cr.hahwul.com/api-reference/v2/">CVSS v2.0</a></li>
+      
+      <li><a href="https://cvss.cr.hahwul.com/api-reference/v3/">CVSS v3.x</a></li>
+      
+      <li><a href="https://cvss.cr.hahwul.com/api-reference/v4/">CVSS v4.0</a></li>
+      
+      <li><a href="https://cvss.cr.hahwul.com/api-reference/severity/">Severity</a></li>
+      
+      <li><a href="https://cvss.cr.hahwul.com/api-reference/errors/">Errors</a></li>
+      
+    </ul>
+  </div>
+  
+</aside>
+<div class="sidebar-scrim"></div>
+  <main id="main" class="docs-main">
+    <h1>CVSS v1.0</h1>
+    <p class="lede">CVSS::V1::Vector class and metric enums</p>
+    <h2 id="cvssv1vector"><code>CVSS::V1::Vector</code></h2>
+<pre><code class="language-crystal hljs">v <span class="hljs-operator">=</span> <span class="hljs-variable constant_">CVSS</span><span class="hljs-variable constant_">::</span><span class="hljs-variable constant_">V1</span><span class="hljs-variable constant_">::</span><span class="hljs-variable constant_">Vector</span>.parse(<span class="hljs-string">&quot;</span><span class="hljs-string">(AV:R/AC:L/Au:NR/C:C/I:C/A:C/B:N)</span><span class="hljs-string">&quot;</span><span class="hljs-string"></span>)
+v.base_score          <span class="hljs-comment"># =&gt; 10.0</span>
+v.severity            <span class="hljs-comment"># =&gt; CVSS::Severity::High</span>
+v.b                   <span class="hljs-comment"># =&gt; CVSS::V1::ImpactBias::Normal</span>
+v.to_h                <span class="hljs-comment"># =&gt; {&quot;AV&quot;=&gt;&quot;R&quot;,&quot;AC&quot;=&gt;&quot;L&quot;,&quot;Au&quot;=&gt;&quot;NR&quot;,&quot;C&quot;=&gt;&quot;C&quot;,&quot;I&quot;=&gt;&quot;C&quot;,&quot;A&quot;=&gt;&quot;C&quot;,&quot;B&quot;=&gt;&quot;N&quot;}</span>
+</code></pre>
+<h3 id="vector-notation">Vector notation</h3>
+<p>The FIRST v1.0 guide never standardised a vector string. The notation this
+class parses and emits is NVD's, documented while NVD published v1 scores
+(<code>nvd.nist.gov/cvss.cfm?vectorinfo</code>) and adopted by every v1-era publisher:</p>
+<pre><code>(AV:[R,L]/AC:[H,L]/Au:[R,NR]/C:[N,P,C]/I:[N,P,C]/A:[N,P,C]/B:[N,C,I,A])
+</code></pre>
+<p>Temporal metrics are appended inside the same parentheses:</p>
+<pre><code>/E:[U,P,F,H]/RL:[O,T,W,U]/RC:[U,Uc,C]
+</code></pre>
+<p><code>parse</code> additionally accepts the metric list without its parentheses and with
+a <code>CVSS:1.0/</code> prefix; <code>to_s</code> always emits the canonical parenthesised form.</p>
+<p>NVD never published a vector form for the environmental group, so <code>CDP</code> and
+<code>TD</code> use the short codes CVSS v2.0 later gave them. Vectors that omit them
+round-trip byte-for-byte either way.</p>
+<h3 id="class-methods">Class methods</h3>
+<table>
+<thead>
+<tr>
+<th>Method</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>parse(input : String) : Vector</code></td>
+<td>Strict parse. Raises on malformed input. Parentheses and a <code>CVSS:1.0/</code> prefix are both optional.</td>
+</tr>
+<tr>
+<td><code>parse?(input : String) : Vector?</code></td>
+<td>Non-raising variant.</td>
+</tr>
+</tbody>
+</table>
+<h3 id="constructor">Constructor</h3>
+<pre><code class="language-crystal hljs"><span class="hljs-variable constant_">CVSS</span><span class="hljs-variable constant_">::</span><span class="hljs-variable constant_">V1</span><span class="hljs-variable constant_">::</span><span class="hljs-variable constant_">Vector</span>.new(
+  av:, ac:, au:, c:, i:, a:, b:,
+  e: <span class="hljs-literal">nil</span>, rl: <span class="hljs-literal">nil</span>, rc: <span class="hljs-literal">nil</span>,
+  cdp: <span class="hljs-literal">nil</span>, td: <span class="hljs-literal">nil</span>,
+)
+</code></pre>
+<h3 id="scoring">Scoring</h3>
+<table>
+<thead>
+<tr>
+<th>Method</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>base_score : Float64</code></td>
+<td>FIRST CVSS v1.0 formula, including the Impact Bias re-weighting.</td>
+</tr>
+<tr>
+<td><code>temporal_score : Float64</code></td>
+<td>Falls back to <code>base_score</code> when no temporal metrics are set.</td>
+</tr>
+<tr>
+<td><code>environmental_score : Float64</code></td>
+<td>Falls back to <code>temporal_score</code> when no environmental metrics are set. Returns <code>0.0</code> when <code>TD:N</code>.</td>
+</tr>
+</tbody>
+</table>
+<h3 id="severity">Severity</h3>
+<table>
+<thead>
+<tr>
+<th>Method</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>severity : Severity</code></td>
+<td>Maps the base score to <code>None</code>/<code>Low</code>/<code>Medium</code>/<code>High</code>. v1 has no Critical band.</td>
+</tr>
+<tr>
+<td><code>temporal_severity : Severity</code></td>
+<td></td>
+</tr>
+<tr>
+<td><code>environmental_severity : Severity</code></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<h3 id="classification-helpers">Classification helpers</h3>
+<table>
+<thead>
+<tr>
+<th>Method</th>
+<th>Returns</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>remote?</code> / <code>network?</code> / <code>local?</code></td>
+<td><code>Bool</code>. <code>network?</code> is an alias for <code>remote?</code> — v1&#39;s &quot;Remote&quot; is what v2.0 renamed to &quot;Network&quot;.</td>
+</tr>
+<tr>
+<td><code>requires_authentication?</code></td>
+<td><code>Bool</code> (true when <code>Au:R</code>)</td>
+</tr>
+<tr>
+<td><code>impacts_confidentiality?</code> / <code>impacts_integrity?</code> / <code>impacts_availability?</code></td>
+<td><code>Bool</code></td>
+</tr>
+</tbody>
+</table>
+<h3 id="serialization">Serialization</h3>
+<table>
+<thead>
+<tr>
+<th>Method</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>to_s(io : IO) : Nil</code> / <code>to_s : String</code></td>
+<td>Emits the canonical parenthesised vector string.</td>
+</tr>
+<tr>
+<td><code>to_h : Hash(String, String)</code></td>
+<td>Metric short-codes. Optional metrics omitted when not set.</td>
+</tr>
+<tr>
+<td><code>to_json(json : JSON::Builder) : Nil</code></td>
+<td>NVD-shaped object. Adds <code>temporalScore</code>/<code>environmentalScore</code> only when set.</td>
+</tr>
+<tr>
+<td><code>metric_value(name : String) : String</code></td>
+<td>Short-code for one metric. Unset optional metrics report <code>&quot;ND&quot;</code> — a library sentinel, since v1.0 has no NotDefined code of its own.</td>
+</tr>
+</tbody>
+</table>
+<h2 id="metric-enums">Metric enums</h2>
+<p>All accept <code>parse(s : String) : Self</code> and <code>code : String</code>. Every enum except
+<code>ImpactBias</code> also exposes <code>weight : Float64</code>.</p>
+<table>
+<thead>
+<tr>
+<th>Enum</th>
+<th>Codes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>AccessVector</code></td>
+<td><code>L</code> Local (0.7), <code>R</code> Remote (1.0)</td>
+</tr>
+<tr>
+<td><code>AccessComplexity</code></td>
+<td><code>H</code> High (0.8), <code>L</code> Low (1.0)</td>
+</tr>
+<tr>
+<td><code>Authentication</code></td>
+<td><code>R</code> Required (0.6), <code>NR</code> NotRequired (1.0)</td>
+</tr>
+<tr>
+<td><code>Impact</code> <em>(C/I/A)</em></td>
+<td><code>N</code> None (0), <code>P</code> Partial (0.7), <code>C</code> Complete (1.0)</td>
+</tr>
+<tr>
+<td><code>ImpactBias</code></td>
+<td><code>N</code> Normal, <code>C</code> Confidentiality, <code>I</code> Integrity, <code>A</code> Availability</td>
+</tr>
+<tr>
+<td><code>Exploitability</code></td>
+<td><code>U</code> Unproven, <code>P</code> ProofOfConcept, <code>F</code> Functional, <code>H</code> High</td>
+</tr>
+<tr>
+<td><code>RemediationLevel</code></td>
+<td><code>O</code> OfficialFix, <code>T</code> TemporaryFix, <code>W</code> Workaround, <code>U</code> Unavailable</td>
+</tr>
+<tr>
+<td><code>ReportConfidence</code></td>
+<td><code>U</code> Unconfirmed, <code>Uc</code> Uncorroborated, <code>C</code> Confirmed</td>
+</tr>
+<tr>
+<td><code>CollateralDamagePotential</code></td>
+<td><code>N</code>, <code>L</code>, <code>M</code>, <code>H</code></td>
+</tr>
+<tr>
+<td><code>TargetDistribution</code></td>
+<td><code>N</code>, <code>L</code>, <code>M</code>, <code>H</code></td>
+</tr>
+</tbody>
+</table>
+<h3 id="impactbias"><code>ImpactBias</code></h3>
+<p>Impact Bias is unique to v1.0 — it re-weights the three impact sub-scores
+against one another rather than contributing a single weight, so it exposes
+three accessors instead of <code>weight</code>:</p>
+<table>
+<thead>
+<tr>
+<th>Bias</th>
+<th><code>conf_weight</code></th>
+<th><code>integ_weight</code></th>
+<th><code>avail_weight</code></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>Normal</code></td>
+<td>0.333</td>
+<td>0.333</td>
+<td>0.333</td>
+</tr>
+<tr>
+<td><code>Confidentiality</code></td>
+<td>0.5</td>
+<td>0.25</td>
+<td>0.25</td>
+</tr>
+<tr>
+<td><code>Integrity</code></td>
+<td>0.25</td>
+<td>0.5</td>
+<td>0.25</td>
+</tr>
+<tr>
+<td><code>Availability</code></td>
+<td>0.25</td>
+<td>0.25</td>
+<td>0.5</td>
+</tr>
+</tbody>
+</table>
+<p>v2.0 dropped the metric; the same idea returned as the environmental
+<code>CR</code>/<code>IR</code>/<code>AR</code> security requirements.</p>
+
+    
+    <nav class="page-nav" aria-label="Adjacent pages">
+      
+      <a class="page-nav-link page-nav-prev" href="https://cvss.cr.hahwul.com/api-reference/vector/" rel="prev">
+        <span class="page-nav-label">Previous</span>
+        <span class="page-nav-title">Vector (abstract)</span>
+      </a>
+      
+      
+      <a class="page-nav-link page-nav-next" href="https://cvss.cr.hahwul.com/api-reference/v2/" rel="next">
+        <span class="page-nav-label">Next</span>
+        <span class="page-nav-title">CVSS v2.0</span>
+      </a>
+      
+    </nav>
+    
+    <div class="docs-footer">
+      <p>cvss.cr documentation</p>
+      <div class="docs-footer-links">
+        <a href="https://github.com/hahwul/cvss.cr">GitHub</a>
+        <a href="https://github.com/hahwul/hwaro">Built with Hwaro</a>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script src="https://cvss.cr.hahwul.com/js/search.js"></script>
+<script>
+(function () {
+  var KEY = "hwaro-theme";
+  var MODES = ["auto", "light", "dark"];
+  var root = document.documentElement;
+  var btn = document.querySelector(".theme-toggle");
+  if (!btn) return;
+  function apply(mode) {
+    if (mode === "auto") {
+      root.removeAttribute("data-theme");
+      try { localStorage.removeItem(KEY); } catch (e) {}
+    } else {
+      root.setAttribute("data-theme", mode);
+      try { localStorage.setItem(KEY, mode); } catch (e) {}
+    }
+    btn.setAttribute("data-mode", mode);
+    btn.setAttribute("aria-label", "Theme: " + mode);
+    btn.title = "Theme: " + mode;
+  }
+  var stored = "auto";
+  try { var t = localStorage.getItem(KEY); if (t === "light" || t === "dark") stored = t; } catch (e) {}
+  btn.addEventListener("click", function () {
+    apply(MODES[(MODES.indexOf(btn.getAttribute("data-mode")) + 1) % MODES.length]);
+  });
+  apply(stored);
+})();
+(function () {
+  var btn = document.querySelector(".nav-toggle");
+  var scrim = document.querySelector(".sidebar-scrim");
+  var sidebar = document.getElementById("sidebar");
+  if (!btn) return;
+  function set(open) {
+    document.body.classList.toggle("nav-open", open);
+    btn.setAttribute("aria-expanded", open ? "true" : "false");
+  }
+  btn.addEventListener("click", function () {
+    set(!document.body.classList.contains("nav-open"));
+  });
+  if (scrim) scrim.addEventListener("click", function () { set(false); });
+  if (sidebar) sidebar.addEventListener("click", function (e) {
+    if (e.target.closest("a")) set(false);
+  });
+  document.addEventListener("keydown", function (e) {
+    if (e.key === "Escape") set(false);
+  });
+})();
+</script>
+
+</body>
+</html>
