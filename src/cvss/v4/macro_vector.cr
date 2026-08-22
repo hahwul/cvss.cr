@@ -119,11 +119,11 @@ module CVSS::V4
       2 => ["SC:L/SI:L/SA:L/"],
     }
 
-    EQ5_MAXES = {
-      0 => ["E:A/"],
-      1 => ["E:P/"],
-      2 => ["E:U/"],
-    }
+    # EQ5 (Exploit Maturity) has no max-severity fragments or region depth
+    # of its own: the reference calculator hardcodes its severity-distance
+    # percentage to 0, so `E:A` / `E:P` / `E:U` contribute nothing beyond
+    # selecting the macro vector. It still counts toward the number of
+    # lower neighbours, which is handled directly in `Score.score`.
 
     # Depth (in level-units) of each MacroVector region.
     MAX_SEVERITY_EQ1     = {0 => 1, 1 => 4, 2 => 5}
@@ -134,6 +134,5 @@ module CVSS::V4
       2 => {1 => 10},
     }
     MAX_SEVERITY_EQ4 = {0 => 6, 1 => 5, 2 => 4}
-    # MAX_SEVERITY_EQ5 is unused — eq5 percent is hardcoded to 0 in scoring.
   end
 end

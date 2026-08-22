@@ -200,6 +200,26 @@ describe CVSS::V3::Vector do
       # Changed scope uses the polynomial formula and PR changed-scope weight.
       v.impact_subscore.should be > 0
     end
+
+    it "floors the impact subscore at 0 for S:C with no impact" do
+      # The changed-scope polynomial evaluates to -0.21808 at ISS = 0, which
+      # base_score already collapses to 0.0. The reported subscore must not
+      # go negative — the FIRST JSON Schema constrains score fields to 0..10.
+      {"3.0", "3.1"}.each do |ver|
+        v = parse("CVSS:#{ver}/AV:N/AC:L/PR:N/UI:N/S:C/C:N/I:N/A:N")
+        v.base_score.should eq(0.0)
+        CVSS::V3::Score.impact(v).should be < 0 # raw spec formula, unclamped
+        v.impact_subscore.should eq(0.0)
+        JSON.parse(v.to_json)["impactScore"].as_f.should eq(0.0)
+      end
+    end
+
+    it "floors the impact subscore at 0 for MS:C with all impacts modified away" do
+      v = parse("CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H/MS:C/MC:N/MI:N/MA:N")
+      v.environmental_score.should eq(0.0)
+      v.impact_subscore.should be >= 0.0
+      JSON.parse(v.to_json)["impactScore"].as_f.should be >= 0.0
+    end
   end
 
   describe ".parse?" do
