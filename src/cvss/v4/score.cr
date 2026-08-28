@@ -46,29 +46,29 @@ module CVSS::V4
     # hand-maintained copy of the same data could silently stop agreeing
     # with them.
     EQ1_MAX_LEVELS = MacroVectorTables::EQ1_MAXES.transform_values do |fragments|
-      fragments.map do |f|
-        {AV_LEVELS[code_in(f, "AV")], PR_LEVELS[code_in(f, "PR")], UI_LEVELS[code_in(f, "UI")]}
+      fragments.map do |fragment|
+        {AV_LEVELS[code_in(fragment, "AV")], PR_LEVELS[code_in(fragment, "PR")], UI_LEVELS[code_in(fragment, "UI")]}
       end
     end
 
     EQ2_MAX_LEVELS = MacroVectorTables::EQ2_MAXES.transform_values do |fragments|
-      fragments.map do |f|
-        {AC_LEVELS[code_in(f, "AC")], AT_LEVELS[code_in(f, "AT")]}
+      fragments.map do |fragment|
+        {AC_LEVELS[code_in(fragment, "AC")], AT_LEVELS[code_in(fragment, "AT")]}
       end
     end
 
     EQ3_EQ6_MAX_LEVELS = MacroVectorTables::EQ3_EQ6_MAXES.transform_values do |by_eq6|
       by_eq6.transform_values do |fragments|
-        fragments.map do |f|
-          {VC_LEVELS[code_in(f, "VC")], VI_LEVELS[code_in(f, "VI")], VA_LEVELS[code_in(f, "VA")],
-           CR_LEVELS[code_in(f, "CR")], IR_LEVELS[code_in(f, "IR")], AR_LEVELS[code_in(f, "AR")]}
+        fragments.map do |fragment|
+          {VC_LEVELS[code_in(fragment, "VC")], VI_LEVELS[code_in(fragment, "VI")], VA_LEVELS[code_in(fragment, "VA")],
+           CR_LEVELS[code_in(fragment, "CR")], IR_LEVELS[code_in(fragment, "IR")], AR_LEVELS[code_in(fragment, "AR")]}
         end
       end
     end
 
     EQ4_MAX_LEVELS = MacroVectorTables::EQ4_MAXES.transform_values do |fragments|
-      fragments.map do |f|
-        {SC_LEVELS[code_in(f, "SC")], SI_LEVELS[code_in(f, "SI")], SA_LEVELS[code_in(f, "SA")]}
+      fragments.map do |fragment|
+        {SC_LEVELS[code_in(fragment, "SC")], SI_LEVELS[code_in(fragment, "SI")], SA_LEVELS[code_in(fragment, "SA")]}
       end
     end
 
