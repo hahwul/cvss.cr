@@ -1,5 +1,18 @@
 # Changelog
 
+## Unreleased
+
+- Fix `CVSS.parse` misrouting parenthesised CVSS v2.0 vectors — the form
+  NVD's v2 calculator renders — to the v1.0 parser, where they failed with
+  a misleading "invalid AV value" error. Version detection now keys off the
+  v1-only `B` (Impact Bias) metric, and both parsers accept their notation
+  with or without parentheses.
+- Fix `CVSS::Severity.from_score` (and `from_v2_score` / `from_v1_score`)
+  rating a NaN score as `Critical` / `High`; they now raise `ArgumentError`.
+- Report an unknown CVSS v4.0 metric key as unknown rather than as the
+  required metric it displaced, matching the v1/v2/v3 parsers.
+- Add `CVSS.from_json?`, the non-raising counterpart to `CVSS.from_json`.
+
 ## v0.2.0
 
 - Add CVSS v1.0 support (`CVSS::V1::Vector`): base, temporal, and

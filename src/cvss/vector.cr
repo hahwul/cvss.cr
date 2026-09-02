@@ -90,8 +90,11 @@ module CVSS
     end
   end
 
-  # Splits a vector string body (the part after any "CVSS:x.y/" prefix) into
-  # an ordered array of `{key, value}` tuples while validating shape.
+  # Shape-level handling of a raw vector string, shared by every version's
+  # parser: unwrapping NVD's parentheses (`strip_parens`), and splitting the
+  # remaining body into an ordered array of `{key, value}` tuples while
+  # validating its shape (`split_metrics`). Neither knows what any metric
+  # means — that is each version's job.
   module VectorString
     extend self
 
@@ -108,6 +111,24 @@ module CVSS
         pairs << {key, value}
       end
       pairs
+    end
+
+    # Removes the parentheses that wrap NVD's vector notation — mandatory
+    # for CVSS v1.0, and how NVD's v2.0 calculator still renders a v2
+    # vector (`.../v2-calculator?vector=(AV:N/AC:L/…)`). Both halves must
+    # be present: a lone "(" or ")" is malformed, not tolerable.
+    #
+    # The error names no CVSS version deliberately. A vector truncated
+    # mid-string has lost whatever marker `Parser` dispatches on — for v1
+    # that marker is `B`, which lives at the tail — so whichever parser
+    # ends up here is only guessing at the version, while "the parentheses
+    # do not match" is true of the input either way.
+    def strip_parens(body : String) : String
+      return body unless body.starts_with?('(') || body.ends_with?(')')
+      unless body.starts_with?('(') && body.ends_with?(')')
+        raise ParseError.new("unbalanced parentheses in vector string")
+      end
+      body[1...-1]
     end
   end
 end

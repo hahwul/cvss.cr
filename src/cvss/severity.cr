@@ -27,7 +27,13 @@ module CVSS
     end
 
     # Maps a numeric base score (0.0..10.0) to a CVSS v3.x / v4.0 severity rating.
+    #
+    # Scores outside the range saturate at the nearest band. A NaN score
+    # raises `ArgumentError`: every `<` against NaN is false, so it would
+    # otherwise fall through to the `else` branch and be rated *Critical* —
+    # the worst possible way to mis-report an unknown value.
     def self.from_score(score : Float64) : Severity
+      reject_nan(score)
       case score
       when .< 0.1 then None
       when .< 4.0 then Low
@@ -39,6 +45,7 @@ module CVSS
 
     # CVSS v2.0 only defines Low/Medium/High. None is used for 0.0.
     def self.from_v2_score(score : Float64) : Severity
+      reject_nan(score)
       case score
       when .< 0.1 then None
       when .< 4.0 then Low
@@ -52,6 +59,10 @@ module CVSS
     # Low/Medium/High bands it later carried into v2.0 — so v1 reuses them.
     def self.from_v1_score(score : Float64) : Severity
       from_v2_score(score)
+    end
+
+    private def self.reject_nan(score : Float64) : Nil
+      raise ArgumentError.new("cannot rate a NaN score") if score.nan?
     end
   end
 end

@@ -3,10 +3,15 @@ require "../src/cvss"
 # =============================================================================
 # Error Handling
 # =============================================================================
-# All exceptions inherit from CVSS::Error:
+# Every error raised for a vector string inherits from CVSS::Error:
 #   - CVSS::ParseError           — malformed / missing / duplicate metrics
 #   - CVSS::InvalidMetricError   — value outside the metric's allowed set
 #   - CVSS::UnknownVersionError  — unsupported "CVSS:x.y/" prefix
+#
+# Two things raise outside that hierarchy: CVSS.from_json raises
+# JSON::ParseException when the input is not JSON at all (CVSS.from_json?
+# swallows both and returns nil), and Severity.from_score raises
+# ArgumentError for a NaN score.
 
 def try_parse(label : String, input : String)
   CVSS.parse(input)
@@ -49,3 +54,10 @@ rescue CVSS::InvalidMetricError
 rescue CVSS::ParseError
   puts "→ malformed vector string:     #{input}"
 end
+
+puts "\n--- Non-raising forms ---"
+
+puts "parse?(\"garbage\")                 => #{CVSS.parse?("garbage").inspect}"
+puts "from_json?(\"not-json\")            => #{CVSS.from_json?("not-json").inspect}"
+puts "from_json?(%({\"baseScore\": 9.8})) => #{CVSS.from_json?(%({"baseScore": 9.8})).inspect}"
+puts "from_json?(valid payload)         => #{CVSS.from_json?(%({"vectorString": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H"})).inspect}"

@@ -19,6 +19,25 @@ describe CVSS::V2::Vector do
       parse("CVSS:2.0/AV:N/AC:L/Au:N/C:P/I:P/A:P").base_score.should eq(7.5)
     end
 
+    # NVD's v2.0 calculator links vectors as `?vector=(AV:N/AC:L/…)`.
+    it "tolerates NVD's parenthesised rendering" do
+      parse("(AV:N/AC:L/Au:N/C:P/I:P/A:P)").base_score.should eq(7.5)
+      parse("CVSS:2.0/(AV:N/AC:L/Au:N/C:P/I:P/A:P)").base_score.should eq(7.5)
+    end
+
+    it "emits the bare notation regardless of how it was given" do
+      parse("(AV:N/AC:L/Au:N/C:P/I:P/A:P)").to_s.should eq("AV:N/AC:L/Au:N/C:P/I:P/A:P")
+    end
+
+    it "rejects unbalanced parentheses" do
+      expect_raises(CVSS::ParseError, /unbalanced/) do
+        parse("(AV:N/AC:L/Au:N/C:P/I:P/A:P")
+      end
+      expect_raises(CVSS::ParseError, /unbalanced/) do
+        parse("AV:N/AC:L/Au:N/C:P/I:P/A:P)")
+      end
+    end
+
     it "rejects missing base metrics" do
       expect_raises(CVSS::ParseError, /missing required/) do
         parse("AV:N/AC:L/Au:N/C:P/I:P")

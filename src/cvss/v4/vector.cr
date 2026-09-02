@@ -166,14 +166,20 @@ module CVSS::V4
         values[key] = value
       end
 
-      missing = BASE_REQUIRED.reject { |k| seen.includes?(k) }
-      unless missing.empty?
-        raise ParseError.new("missing required base metric(s): #{missing.join(", ")}")
-      end
-
+      # Unknown keys are reported first: a typo'd metric is also a missing
+      # one, and "missing AV" is a confusing way to say "AW is not a metric".
+      # v1/v2/v3 reach the same conclusion by rejecting an unknown key from
+      # inside their metric loop; v4 collects its metrics first, so it needs
+      # the explicit ordering. The wording still differs — v4 names every
+      # unknown key, the others stop at the first.
       unknown = values.keys.reject { |k| METRIC_ORDER.includes?(k) }
       unless unknown.empty?
         raise ParseError.new("unknown CVSS v4 metric(s): #{unknown.join(", ")}")
+      end
+
+      missing = BASE_REQUIRED.reject { |k| seen.includes?(k) }
+      unless missing.empty?
+        raise ParseError.new("missing required base metric(s): #{missing.join(", ")}")
       end
 
       new(

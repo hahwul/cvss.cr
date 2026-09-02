@@ -11,9 +11,15 @@ CVSS.parse("CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H")     # → V3::Vector
 CVSS.parse("CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:H/VI:H/VA:H/SC:N/SI:N/SA:N")  # → V4::Vector
 CVSS.parse("CVSS:2.0/AV:N/AC:L/Au:N/C:P/I:P/A:P")              # → V2::Vector
 CVSS.parse("AV:N/AC:L/Au:N/C:P/I:P/A:P")                       # → V2::Vector (no prefix)
-CVSS.parse("(AV:R/AC:L/Au:NR/C:C/I:C/A:C/B:N)")                # → V1::Vector (parenthesised)
+CVSS.parse("(AV:N/AC:L/Au:N/C:P/I:P/A:P)")                     # → V2::Vector (NVD's parenthesised rendering)
 CVSS.parse("AV:R/AC:L/Au:NR/C:C/I:C/A:C/B:N")                  # → V1::Vector (v1-only B metric)
+CVSS.parse("(AV:R/AC:L/Au:NR/C:C/I:C/A:C/B:N)")                # → V1::Vector
 ```
+
+The `B` (Impact Bias) metric is what separates v1.0 from v2.0, not the
+parentheses: NVD renders both versions parenthesised, and either parser
+accepts its vector with or without them. `B` is mandatory in v1.0 and
+defined by no later version, so the two notations stay unambiguous.
 
 ## Typed metric access
 

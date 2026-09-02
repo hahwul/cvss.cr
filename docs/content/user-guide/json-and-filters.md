@@ -48,6 +48,14 @@ CVSS.from_json(%({"vectorString": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H"
 CVSS.from_json(File.read("nvd_response.json"))
 ```
 
+`CVSS.from_json?` is the non-raising form. It returns `nil` for everything `from_json` rejects, including the `JSON::ParseException` raised when the input is not JSON at all:
+
+```crystal
+if vec = CVSS.from_json?(untrusted_payload)
+  # use vec
+end
+```
+
 The library only trusts the `vectorString` — `baseScore` and similar fields in the input are ignored, and scores are recomputed from the parsed vector. This makes parsing safe against tampered or stale payloads.
 
 ## Round-tripping via JSON

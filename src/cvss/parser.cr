@@ -9,9 +9,11 @@ module CVSS
     PREFIX_RE = /\ACVSS:(\d+\.\d+)\//
 
     # Impact Bias is a v1.0-only metric — no later version defines a `B`
-    # key — so its presence identifies an unparenthesised v1 vector that
-    # would otherwise be mistaken for v2.0.
-    V1_IMPACT_BIAS_RE = /(?:\A|\/)B:/
+    # key — so its presence is what tells a v1 vector apart from a v2.0
+    # one. Matched at a segment boundary (start of string, a `/`, or the
+    # `(` that opens NVD's parenthesised notation) so a key merely *ending*
+    # in `B` cannot stand in for it.
+    V1_IMPACT_BIAS_RE = /(?:\A|[\/(])B:/
 
     def parse(input : String) : Vector
       raw = input.strip
@@ -42,13 +44,15 @@ module CVSS
       end
     end
 
-    # CVSS v1.0's (NVD-defined) notation wraps the metric list in
-    # parentheses: `(AV:R/AC:L/Au:NR/C:C/I:C/A:C/B:N)`. A single parenthesis
-    # counts as a marker too, so a truncated v1 vector gets v1's
-    # "unbalanced parentheses" error rather than a confusing v2 one.
+    # Impact Bias is the only reliable v1 marker. The parentheses that wrap
+    # NVD's v1 notation — `(AV:R/AC:L/Au:NR/C:C/I:C/A:C/B:N)` — cannot stand
+    # in for it, because NVD's v2.0 calculator renders v2 vectors the same
+    # way (`(AV:N/AC:L/Au:N/C:P/I:P/A:P)`) and those are far more common.
+    # `B` is mandatory in v1 and defined by no later version, so keying off
+    # it alone leaves the two notations unambiguous; both parsers strip
+    # their own parentheses.
     private def v1?(raw : String) : Bool
-      raw.starts_with?('(') || raw.ends_with?(')') ||
-        V1_IMPACT_BIAS_RE.matches?(raw)
+      V1_IMPACT_BIAS_RE.matches?(raw)
     end
   end
 end

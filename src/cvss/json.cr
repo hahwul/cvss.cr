@@ -55,6 +55,25 @@ module CVSS
     end
   end
 
+  # Non-raising `from_json` — returns nil when the input is not JSON, is
+  # JSON of the wrong shape, carries no `vectorString`, or that string is
+  # not a vector this library can parse.
+  #
+  # `from_json` itself lets `JSON::ParseException` through for input that
+  # is not JSON at all (it pinpoints the offending line and column, which a
+  # `CVSS::ParseError` could not), so a caller feeding it untrusted payloads
+  # would otherwise have to rescue two unrelated exception hierarchies.
+  #
+  # ```
+  # CVSS.from_json?(%({"vectorString": "CVSS:3.1/AV:N/…"})).try(&.base_score)
+  # CVSS.from_json?("not-json") # => nil
+  # ```
+  def self.from_json?(input : String | IO) : Vector?
+    from_json(input)
+  rescue Error | ::JSON::ParseException
+    nil
+  end
+
   private def self.extract_vector_string(json : ::JSON::Any) : String?
     # `JSON::Any#[]?` raises a bare `Exception` when the value it wraps is
     # not an object, so every level is unwrapped with `as_h?` first — a

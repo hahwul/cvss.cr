@@ -26,11 +26,46 @@ describe CVSS do
       vec.base_score.should eq(9.3)
     end
 
-    it "dispatches a parenthesised string to V1::Vector" do
+    it "dispatches a parenthesised v1 vector on its Impact Bias metric" do
       vec = CVSS.parse("(AV:R/AC:L/Au:NR/C:C/I:C/A:C/B:N)")
       vec.should be_a(CVSS::V1::Vector)
       vec.version.should eq("1.0")
       vec.base_score.should eq(10.0)
+    end
+
+    # NVD's v2.0 calculator renders v2 vectors parenthesised, exactly like
+    # its v1 ones, so parentheses alone cannot mean "v1" — only the v1-only
+    # Impact Bias metric can.
+    it "dispatches a parenthesised vector without B to V2::Vector" do
+      vec = CVSS.parse("(AV:N/AC:L/Au:N/C:P/I:P/A:P)")
+      vec.should be_a(CVSS::V2::Vector)
+      vec.version.should eq("2.0")
+      vec.base_score.should eq(7.5)
+      vec.to_s.should eq("AV:N/AC:L/Au:N/C:P/I:P/A:P")
+    end
+
+    it "dispatches a parenthesised v2 vector carrying optional metrics" do
+      vec = CVSS.parse("(AV:N/AC:L/Au:N/C:P/I:P/A:P/E:F/RL:OF/RC:C)")
+      vec.should eq(CVSS::V2::Vector.parse("AV:N/AC:L/Au:N/C:P/I:P/A:P/E:F/RL:OF/RC:C"))
+    end
+
+    it "accepts parentheses alongside an explicit CVSS:2.0/ prefix" do
+      CVSS.parse("CVSS:2.0/(AV:N/AC:L/Au:N/C:P/I:P/A:P)").base_score.should eq(7.5)
+    end
+
+    # A truncated vector has lost the marker `Parser` dispatches on (for v1
+    # that is `B`, at the tail), so the error names no version — only the
+    # thing that is actually knowable about the input.
+    it "reports a truncated vector as an unbalanced-parentheses error" do
+      ["(AV:N/AC:L/Au:N/C:P/I:P/A:P", "(AV:R/AC:L/Au:NR/C:C/I:C/A:C"].each do |truncated|
+        expect_raises(CVSS::ParseError, /unbalanced parentheses in vector string/) do
+          CVSS.parse(truncated)
+        end
+      end
+    end
+
+    it "still detects v1 when B is the first metric inside the parentheses" do
+      CVSS.parse("(B:N/AV:R/AC:L/Au:NR/C:C/I:C/A:C)").should be_a(CVSS::V1::Vector)
     end
 
     it "dispatches an unparenthesised v1 vector on its Impact Bias metric" do
@@ -302,6 +337,53 @@ describe CVSS do
     end
   end
 
+  describe ".from_json?" do
+    it "returns the parsed vector on success" do
+      vec = CVSS.from_json?(%({"vectorString": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H"}))
+      vec.should_not be_nil
+      vec.not_nil!.base_score.should eq(9.8)
+    end
+
+    it "returns nil for every shape from_json rejects" do
+      [
+        "not-json",                                     # JSON::ParseException
+        "[1, 2, 3]",                                    # not an object
+        %({"baseScore": 9.8}),                          # no vectorString
+        %({"vectorString": 123}),                       # wrong type
+        %({"vectorString": "CVSS:3.1/AV:N"}),           # unparsable vector
+        %({"vectorString": "CVSS:5.0/AV:N/AC:L/PR:N"}), # unsupported version
+      ].each do |payload|
+        CVSS.from_json?(payload).should be_nil
+      end
+    end
+  end
+
+  describe "VectorString.strip_parens" do
+    it "unwraps a balanced pair" do
+      CVSS::VectorString.strip_parens("(AV:N/AC:L)").should eq("AV:N/AC:L")
+    end
+
+    it "leaves an unparenthesised body untouched" do
+      CVSS::VectorString.strip_parens("AV:N/AC:L").should eq("AV:N/AC:L")
+      CVSS::VectorString.strip_parens("").should eq("")
+    end
+
+    it "rejects a lone parenthesis on either end" do
+      ["(AV:N", "AV:N)", "(", ")"].each do |body|
+        expect_raises(CVSS::ParseError, /unbalanced parentheses/) do
+          CVSS::VectorString.strip_parens(body)
+        end
+      end
+    end
+
+    # Peels exactly one level, and does not care that the result is empty —
+    # judging the contents is `split_metrics`' job, not this one's.
+    it "peels a single level and leaves the rest to split_metrics" do
+      CVSS::VectorString.strip_parens("()").should eq("")
+      CVSS::VectorString.strip_parens("((AV:N))").should eq("(AV:N)")
+    end
+  end
+
   describe "VectorString.split_metrics" do
     it "splits a well-formed body into ordered key/value pairs" do
       pairs = CVSS::VectorString.split_metrics("AV:N/AC:L/PR:N")
@@ -428,6 +510,19 @@ describe CVSS do
       CVSS::Severity.from_v2_score(6.99).should eq(CVSS::Severity::Medium)
       CVSS::Severity.from_v2_score(7.0).should eq(CVSS::Severity::High)
       CVSS::Severity.from_v2_score(10.0).should eq(CVSS::Severity::High)
+    end
+
+    # Every `<` against NaN is false, so an unguarded NaN would fall through
+    # to the last band and be reported as Critical / High.
+    it "rejects a NaN score instead of rating it as the worst band" do
+      expect_raises(ArgumentError, /NaN/) { CVSS::Severity.from_score(Float64::NAN) }
+      expect_raises(ArgumentError, /NaN/) { CVSS::Severity.from_v2_score(Float64::NAN) }
+      expect_raises(ArgumentError, /NaN/) { CVSS::Severity.from_v1_score(Float64::NAN) }
+    end
+
+    it "saturates out-of-range scores at the nearest band" do
+      CVSS::Severity.from_score(-1.0).should eq(CVSS::Severity::None)
+      CVSS::Severity.from_score(99.0).should eq(CVSS::Severity::Critical)
     end
 
     it "is ordered: Critical > High > Medium > Low > None" do
