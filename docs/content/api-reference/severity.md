@@ -26,6 +26,8 @@ Because it is a regular Crystal enum, it gets predicate methods (`s.critical?`, 
 | `Severity.from_v2_score(score : Float64) : Severity` | Uses the legacy CVSS v2.0 banding (no Critical band). |
 | `Severity.from_v1_score(score : Float64) : Severity` | Same banding as `from_v2_score`. CVSS v1.0 defines no ratings of its own; these are the bands NVD labelled v1 scores with. |
 
+All three saturate at the nearest band for a score outside 0.0–10.0, and raise `ArgumentError` for a NaN score — NaN compares false against every band boundary, so it would otherwise be rated as the most severe band.
+
 ## v3.x / v4.0 banding
 
 | Score      | Severity |

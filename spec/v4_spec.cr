@@ -27,6 +27,14 @@ describe CVSS::V4::Vector do
       end
     end
 
+    # A typo'd key is also a missing one; naming the typo is the useful half,
+    # and it is what the v1/v2/v3 parsers report for the same input.
+    it "reports the unknown metric, not the metric it displaced" do
+      expect_raises(CVSS::ParseError, /unknown CVSS v4 metric\(s\): AW/) do
+        parse("CVSS:4.0/AW:N/AC:L/AT:N/PR:N/UI:N/VC:H/VI:H/VA:H/SC:N/SI:N/SA:N")
+      end
+    end
+
     it "accepts optional Threat / Environmental / Supplemental metrics" do
       s = "CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:H/VI:H/VA:H/SC:N/SI:N/SA:N" \
           "/E:A/CR:H/IR:H/AR:H/MAV:N/MAC:L/MAT:N/MPR:N/MUI:N/MVC:H/MVI:H/MVA:H" \

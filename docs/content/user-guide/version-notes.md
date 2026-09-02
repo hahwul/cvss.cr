@@ -7,7 +7,7 @@ weight = 5
 ## CVSS v1.0
 
 - **No standardised vector string.** The FIRST v1.0 guide defines metrics and formulas but never a vector notation. This library uses NVD's — parentheses around the metric list, e.g. `(AV:R/AC:L/Au:NR/C:C/I:C/A:C/B:N)` — which is what every v1-era publisher emitted and what NVD documented at `nvd.nist.gov/cvss.cfm?vectorinfo`. `parse` also accepts the list without parentheses and with a `CVSS:1.0/` prefix; `to_s` always emits the canonical parenthesised form.
-- **Impact Bias (`B`) is v1-only.** It re-weights the three impact sub-scores against one another (`Normal` splits them 0.333/0.333/0.333; a biased value gives the favoured impact 0.5 and the other two 0.25 each). v2.0 dropped the metric and reintroduced the idea as the environmental `CR`/`IR`/`AR` requirements. `B` is a *required* base metric — `parse` rejects a vector without it.
+- **Impact Bias (`B`) is v1-only.** It re-weights the three impact sub-scores against one another (`Normal` splits them 0.333/0.333/0.333; a biased value gives the favoured impact 0.5 and the other two 0.25 each). v2.0 dropped the metric and reintroduced the idea as the environmental `CR`/`IR`/`AR` requirements. `B` is a *required* base metric — `parse` rejects a vector without it, and it is also what `CVSS.parse` keys version detection off: NVD renders v2.0 vectors parenthesised too, so parentheses alone cannot mean v1.0.
 - **Binary base metrics.** `AV` is Remote/Local (no Adjacent Network), and `Au` is Required/Not-Required (no Single/Multiple split). `AV:R`, `Au:NR`, `RL:O`/`RL:T`, and `E:P` are all v1 spellings that mean something different — or nothing — in v2.0.
 - **`RC:Uc`** (Uncorroborated) is written mixed-case in NVD's legend. Upper-case `RC:UC` — the code v2.0 later assigned to *Unconfirmed* — appears in the wild too, so both are accepted on input; `to_s` normalises to `Uc`.
 - **No "Not Defined" values.** Unset temporal metrics score as the neutral 1.0, so `temporal_score` collapses to `base_score`; unset environmental metrics leave `environmental_score` equal to `temporal_score`. `TD:N` still legitimately zeroes the environmental score.
@@ -18,6 +18,7 @@ weight = 5
 ## CVSS v2.0
 
 - **No prefix in vector strings.** `CVSS.parse` recognises both prefix-less input and an explicit `CVSS:2.0/` prefix (some downstream tools emit the latter for symmetry with v3+).
+- **Parentheses are tolerated.** NVD's v2 calculator links vectors as `?vector=(AV:N/AC:L/Au:N/C:P/I:P/A:P)`, and that rendering is common in v2-era data, so `parse` accepts it; `to_s` always emits the bare notation the v2 guide uses.
 - **Severity bands** map at most to `High` — there is no Critical band. `Severity::None` is returned for `0.0`, which is a small convenience extension over the strict spec (which only defines Low/Medium/High).
 - **Multi-character codes**: `Au` (lowercase `u`), `CDP:LM`/`CDP:MH`, `RL:OF`/`RL:TF`, `RC:UC`/`RC:UR`, `E:POC` are all parsed and emitted exactly as written.
 - Temporal and Environmental metrics are supported. `environmental_score` reduces to `0.0` when `TD:N`.

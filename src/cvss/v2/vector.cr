@@ -69,6 +69,11 @@ module CVSS::V2
       # of the v2 spec — some tools emit it for symmetry with v3+.
       body = raw.starts_with?("CVSS:2.0/") ? raw[("CVSS:2.0/".size)..] : raw
 
+      # The v2 guide writes vectors bare, but NVD's v2 calculator renders
+      # them parenthesised (`?vector=(AV:N/AC:L/Au:N/C:P/I:P/A:P)`) and
+      # that form is widespread in v2-era data, so accept it too.
+      body = VectorString.strip_parens(body)
+
       pairs = VectorString.split_metrics(body)
       seen = Set(String).new
 

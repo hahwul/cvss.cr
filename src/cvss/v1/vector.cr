@@ -86,14 +86,8 @@ module CVSS::V1
       # of any v1-era notation — it keeps `CVSS.parse` symmetric with v3+.
       body = body[("CVSS:1.0/".size)..] if body.starts_with?("CVSS:1.0/")
 
-      # The NVD notation wraps the metric list in parentheses. Both halves
-      # must be present: a lone "(" or ")" is malformed, not tolerable.
-      if body.starts_with?('(') || body.ends_with?(')')
-        unless body.starts_with?('(') && body.ends_with?(')')
-          raise ParseError.new("unbalanced parentheses in CVSS v1 vector")
-        end
-        body = body[1...-1]
-      end
+      # The NVD notation wraps the metric list in parentheses.
+      body = VectorString.strip_parens(body)
 
       pairs = VectorString.split_metrics(body)
       seen = Set(String).new

@@ -31,9 +31,14 @@ Then `shards install`.
 
 `CVSS.parse` inspects the `CVSS:x.y/` prefix and dispatches to the
 appropriate version-specific parser. Vector strings without a prefix are
-treated as CVSS v2.0 — unless they carry a v1.0 marker, which is either the
-surrounding parentheses of NVD's v1 notation or the v1-only `B` (Impact
-Bias) metric.
+treated as CVSS v2.0 — unless they carry the v1-only `B` (Impact Bias)
+metric, which marks them as v1.0.
+
+Both v1.0 and v2.0 vectors are accepted with or without the surrounding
+parentheses NVD renders them in, so parentheses on their own say nothing
+about the version — `(AV:N/AC:L/Au:N/C:P/I:P/A:P)` is v2.0 and
+`(AV:R/AC:L/Au:NR/C:C/I:C/A:C/B:N)` is v1.0. `B` is mandatory in v1.0 and
+defined by no later version, which keeps the two unambiguous.
 
 ```crystal
 require "cvss"
@@ -110,7 +115,8 @@ end
 ```
 
 The same `parse?` method is also available on each version-specific class:
-`CVSS::V3::Vector.parse?(input)`, `CVSS::V4::Vector.parse?(input)`, etc.
+`CVSS::V3::Vector.parse?(input)`, `CVSS::V4::Vector.parse?(input)`, etc.,
+and `CVSS.from_json?` does the same for JSON payloads.
 
 ### Equality, hashing, and ordering
 
@@ -184,6 +190,13 @@ CVSS.from_json(%({"vectorString": "CVSS:3.1/AV:N/..."})).base_score
 CVSS.from_json(File.read("nvd_response.json"))
 ```
 
+`CVSS.from_json?` is the non-raising form — it returns `nil` for anything
+`from_json` rejects, including input that is not JSON at all:
+
+```crystal
+CVSS.from_json?(untrusted_payload).try(&.base_score)
+```
+
 ### Classification helpers
 
 Every Vector exposes predicate methods for the most common filtering
@@ -233,7 +246,8 @@ bte.environmental_set?        # => true
 
 ### Errors
 
-All exceptions inherit from `CVSS::Error`:
+Every error this library raises for a vector string inherits from
+`CVSS::Error`:
 
 - `CVSS::ParseError` — malformed vector string, missing required metrics, or
   duplicate metrics.
@@ -241,6 +255,17 @@ All exceptions inherit from `CVSS::Error`:
   set (e.g. `AV:Q`).
 - `CVSS::UnknownVersionError` — `CVSS:x.y/` prefix references a version this
   library does not implement.
+
+Two cases fall outside that hierarchy:
+
+- `CVSS.from_json` lets a `JSON::ParseException` through when the input is
+  not JSON at all — that error pinpoints the offending line and column,
+  which a `CVSS::ParseError` could not. Use `CVSS.from_json?` if you would
+  rather get `nil` than rescue both.
+- `CVSS::Severity.from_score` (and its `from_v2_score` / `from_v1_score`
+  siblings) raises `ArgumentError` for a NaN score. No score this library
+  computes is ever NaN, so this only applies when you call these class
+  methods with a number of your own.
 
 ## Severity
 

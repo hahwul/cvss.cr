@@ -36,6 +36,7 @@ Abstract class. Every concrete vector (`CVSS::V2::Vector`, `CVSS::V3::Vector`, `
 | `CVSS.parse(input : String) : Vector` | Parses any supported version. Raises on failure. |
 | `CVSS.parse?(input : String) : Vector?` | Returns `nil` instead of raising. |
 | `CVSS.from_json(input : String \| IO) : Vector` | Reads a flat or NVD-nested JSON payload. |
+| `CVSS.from_json?(input : String \| IO) : Vector?` | Returns `nil` instead of raising — including for input that is not JSON at all. |
 
 ## Equality semantics
 
