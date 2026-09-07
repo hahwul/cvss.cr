@@ -80,11 +80,9 @@ module CVSS::V1
       raw = input.strip
       raise ParseError.new("empty CVSS v1 vector") if raw.empty?
 
-      body = raw
-
       # Tolerate an explicit "CVSS:1.0/" prefix even though it isn't part
       # of any v1-era notation — it keeps `CVSS.parse` symmetric with v3+.
-      body = body[("CVSS:1.0/".size)..] if body.starts_with?("CVSS:1.0/")
+      body = VectorString.strip_prefix(raw, {"1.0"})
 
       # The NVD notation wraps the metric list in parentheses.
       body = VectorString.strip_parens(body)
@@ -170,11 +168,17 @@ module CVSS::V1
     def_equals_and_hash @av, @ac, @au, @c, @i, @a, @b,
       @e, @rl, @rc, @cdp, @td
 
-    # Returns the stored short-code for a metric. v1.0 has no "Not Defined"
-    # code of its own, so unset optional metrics report `"ND"` — the same
-    # sentinel `CVSS::V2::Vector#metric_value` uses. Raises `CVSS::Error`
-    # if `name` is not a recognised v1 metric key.
-    def metric_value(name : String) : String
+    protected def metric_order : Array(String)
+      METRIC_ORDER
+    end
+
+    # v1.0 has no "Not Defined" code of its own, so unset optional metrics
+    # report `"ND"` — the sentinel CVSS v2.0 later gave them.
+    protected def not_defined_code : String
+      "ND"
+    end
+
+    def metric_code?(name : String) : String?
       case name
       when "AV"  then @av.code
       when "AC"  then @ac.code
@@ -183,11 +187,11 @@ module CVSS::V1
       when "I"   then @i.code
       when "A"   then @a.code
       when "B"   then @b.code
-      when "E"   then @e.try(&.code) || "ND"
-      when "RL"  then @rl.try(&.code) || "ND"
-      when "RC"  then @rc.try(&.code) || "ND"
-      when "CDP" then @cdp.try(&.code) || "ND"
-      when "TD"  then @td.try(&.code) || "ND"
+      when "E"   then @e.try(&.code)
+      when "RL"  then @rl.try(&.code)
+      when "RC"  then @rc.try(&.code)
+      when "CDP" then @cdp.try(&.code)
+      when "TD"  then @td.try(&.code)
       else            raise CVSS::Error.new("unknown CVSS v1 metric '#{name}'")
       end
     end
@@ -224,53 +228,11 @@ module CVSS::V1
       !@a.none?
     end
 
-    # ───── Hash export ─────
-
-    # Returns a `Hash(String, String)` of metric short-codes, in canonical
-    # order. Optional metrics are only included when set.
-    def to_h : Hash(String, String)
-      h = {} of String => String
-      h["AV"] = @av.code
-      h["AC"] = @ac.code
-      h["Au"] = @au.code
-      h["C"] = @c.code
-      h["I"] = @i.code
-      h["A"] = @a.code
-      h["B"] = @b.code
-      h["E"] = @e.not_nil!.code if @e
-      h["RL"] = @rl.not_nil!.code if @rl
-      h["RC"] = @rc.not_nil!.code if @rc
-      h["CDP"] = @cdp.not_nil!.code if @cdp
-      h["TD"] = @td.not_nil!.code if @td
-      h
-    end
-
     # Emits the parenthesised NVD notation, e.g.
     # `(AV:R/AC:L/Au:NR/C:C/I:C/A:C/B:N)`.
     def to_s(io : IO) : Nil
       io << '('
-      emitted = false
-      METRIC_ORDER.each do |key|
-        code =
-          case key
-          when "AV"  then @av.code
-          when "AC"  then @ac.code
-          when "Au"  then @au.code
-          when "C"   then @c.code
-          when "I"   then @i.code
-          when "A"   then @a.code
-          when "B"   then @b.code
-          when "E"   then @e.try(&.code)
-          when "RL"  then @rl.try(&.code)
-          when "RC"  then @rc.try(&.code)
-          when "CDP" then @cdp.try(&.code)
-          when "TD"  then @td.try(&.code)
-          end
-        next if code.nil?
-        io << '/' if emitted
-        emitted = true
-        io << key << ':' << code
-      end
+      write_metrics(io, separator_before_first: false)
       io << ')'
     end
   end

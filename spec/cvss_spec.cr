@@ -1,5 +1,17 @@
 require "./spec_helper"
 
+# A trimmed but structurally faithful NVD API 2.0 response: the CVSS objects
+# sit under `vulnerabilities[].cve.metrics.cvssMetricV3x[].cvssData`, several
+# levels below where `from_json`'s flat lookups reach.
+NVD_API_RESPONSE = <<-JSON
+  {"resultsPerPage":1,"vulnerabilities":[{"cve":{"id":"CVE-2021-44228","metrics":{
+    "cvssMetricV31":[{"source":"nvd@nist.gov","type":"Primary","cvssData":{
+      "version":"3.1","vectorString":"CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:C/C:H/I:H/A:H",
+      "baseScore":10.0,"baseSeverity":"CRITICAL"}}],
+    "cvssMetricV2":[{"source":"nvd@nist.gov","type":"Primary","cvssData":{
+      "version":"2.0","vectorString":"AV:N/AC:M/Au:N/C:P/I:P/A:P","baseScore":6.8}}]}}}]}
+  JSON
+
 describe CVSS do
   it "exposes a version constant" do
     CVSS::VERSION.should be_a(String)
@@ -99,6 +111,62 @@ describe CVSS do
       vec.base_score.should eq(7.5)
     end
 
+    it "accepts the CVSS: prefix in any case" do
+      {
+        "cvss:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H"                    => "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
+        "Cvss:3.0/AV:N/AC:H/PR:N/UI:N/S:U/C:H/I:H/A:H"                    => "CVSS:3.0/AV:N/AC:H/PR:N/UI:N/S:U/C:H/I:H/A:H",
+        "cVsS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:H/VI:H/VA:H/SC:N/SI:N/SA:N" => "CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:H/VI:H/VA:H/SC:N/SI:N/SA:N",
+        "cvss:2.0/AV:N/AC:L/Au:N/C:P/I:P/A:P"                             => "AV:N/AC:L/Au:N/C:P/I:P/A:P",
+        "cvss:1.0/AV:R/AC:L/Au:NR/C:C/I:C/A:C/B:N"                        => "(AV:R/AC:L/Au:NR/C:C/I:C/A:C/B:N)",
+      }.each do |input, canonical|
+        CVSS.parse(input).to_s.should eq(canonical)
+      end
+    end
+
+    it "keeps metric keys and values case-sensitive" do
+      # Only the CVSS: prefix literal is case-insensitive — the specs write
+      # metric keys and values in a fixed case and the parsers honour that.
+      expect_raises(CVSS::ParseError, /unknown CVSS v3 metric 'av'/) do
+        CVSS.parse("CVSS:3.1/av:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H")
+      end
+      expect_raises(CVSS::InvalidMetricError, /invalid AV value: n/) do
+        CVSS.parse("CVSS:3.1/AV:n/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H")
+      end
+    end
+
+    it "reports a prefix-less v3.x vector instead of misreading it as v2" do
+      expect_raises(CVSS::ParseError, /CVSS v3.x metrics but no 'CVSS:3.0\/' or 'CVSS:3.1\/' prefix/) do
+        CVSS.parse("AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H")
+      end
+    end
+
+    it "reports a prefix-less v4.0 vector instead of misreading it as v2" do
+      expect_raises(CVSS::ParseError, /CVSS v4.0 metrics but no 'CVSS:4.0\/' prefix/) do
+        CVSS.parse("AV:N/AC:L/AT:N/PR:N/UI:N/VC:H/VI:H/VA:H/SC:N/SI:N/SA:N")
+      end
+    end
+
+    it "still routes genuine prefix-less v1/v2 vectors" do
+      # The v3/v4 detection keys off metrics no v1 or v2 vector can carry,
+      # so the notations that legitimately omit a prefix are untouched.
+      CVSS.parse("AV:N/AC:L/Au:N/C:P/I:P/A:P").should be_a(CVSS::V2::Vector)
+      CVSS.parse("AV:N/AC:L/Au:N/C:P/I:P/A:P/E:POC/RL:OF/RC:C/CDP:MH/TD:H/CR:H/IR:M/AR:L")
+        .should be_a(CVSS::V2::Vector)
+      CVSS.parse("(AV:R/AC:L/Au:NR/C:C/I:C/A:C/B:N)").should be_a(CVSS::V1::Vector)
+    end
+
+    it "names the version mismatch when a parser is handed another version's prefix" do
+      expect_raises(CVSS::ParseError, /expected CVSS:2.0 prefix, got CVSS:3.1/) do
+        CVSS::V2::Vector.parse("CVSS:3.1/AV:N/AC:L/Au:N/C:P/I:P/A:P")
+      end
+      expect_raises(CVSS::ParseError, /expected CVSS:4.0 prefix, got CVSS:3.1/) do
+        CVSS::V4::Vector.parse("CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H")
+      end
+      expect_raises(CVSS::ParseError, /expected CVSS:1.0 prefix, got CVSS:2.0/) do
+        CVSS::V1::Vector.parse("CVSS:2.0/AV:R/AC:L/Au:NR/C:C/I:C/A:C/B:N")
+      end
+    end
+
     it "raises on unknown CVSS version" do
       expect_raises(CVSS::UnknownVersionError) do
         CVSS.parse("CVSS:5.0/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H")
@@ -184,6 +252,78 @@ describe CVSS do
       high = CVSS.parse("CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H")
       (low < high).should be_true
       (high > low).should be_true
+    end
+  end
+
+  describe "Cross-version accessors" do
+    # Crystal resolves a method on an abstract type only when every subclass
+    # answers it, so these compile at all only because all four vector
+    # classes carry the whole family.
+    it "answers the score family on a vector of unknown version" do
+      [
+        "(AV:R/AC:L/Au:NR/C:C/I:C/A:C/B:N/E:U)",
+        "AV:N/AC:L/Au:N/C:P/I:P/A:P/E:U",
+        "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H/E:U",
+        "CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:H/VI:H/VA:H/SC:N/SI:N/SA:N/E:U",
+      ].each do |s|
+        vec = CVSS.parse(s)
+        vec.base_score.should be_a(Float64)
+        vec.temporal_score.should be_a(Float64)
+        vec.environmental_score.should be_a(Float64)
+        vec.temporal_severity.should be_a(CVSS::Severity)
+        vec.environmental_severity.should be_a(CVSS::Severity)
+        vec.to_h.should be_a(Hash(String, String))
+        vec.metric_value("AV").should be_a(String)
+      end
+    end
+
+    it "aliases the v4.0 temporal accessors onto the Threat metric group" do
+      vec = CVSS::V4::Vector.parse(
+        "CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:H/VI:H/VA:H/SC:N/SI:N/SA:N/E:U")
+      vec.temporal_score.should eq(vec.threat_score)
+      vec.temporal_severity.should eq(vec.threat_severity)
+    end
+
+    it "reports unset optional metrics as the version's not-defined code" do
+      CVSS.parse("CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H").metric_value("E").should eq("X")
+      CVSS.parse("CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:H/VI:H/VA:H/SC:N/SI:N/SA:N")
+        .metric_value("E").should eq("X")
+      CVSS.parse("AV:N/AC:L/Au:N/C:P/I:P/A:P").metric_value("E").should eq("ND")
+      CVSS.parse("(AV:R/AC:L/Au:NR/C:C/I:C/A:C/B:N)").metric_value("E").should eq("ND")
+    end
+
+    it "distinguishes an unset metric from a set one via metric_code?" do
+      vec = CVSS.parse("CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H/E:X")
+      # E:X is *set* — explicitly Not Defined — where RL is absent entirely.
+      vec.metric_code?("E").should eq("X")
+      vec.metric_code?("RL").should be_nil
+      vec.metric_value("RL").should eq("X")
+    end
+
+    it "raises for a metric key the version does not define" do
+      expect_raises(CVSS::Error, /unknown CVSS v3 metric 'AT'/) do
+        CVSS.parse("CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H").metric_value("AT")
+      end
+      expect_raises(CVSS::Error, /unknown CVSS v4 metric 'MS'/) do
+        CVSS::V4::Vector.parse(
+          "CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:H/VI:H/VA:H/SC:N/SI:N/SA:N").metric_value("MS")
+      end
+    end
+
+    it "keeps to_h, to_s and metric_value in agreement" do
+      [
+        "(AV:R/AC:L/Au:NR/C:C/I:C/A:C/B:A/E:F/RL:O/RC:Uc/CDP:M/TD:H)",
+        "AV:N/AC:L/Au:N/C:P/I:P/A:P/E:POC/RL:OF/RC:C/CDP:MH/TD:H/CR:H/IR:M/AR:L",
+        "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H/E:F/RL:O/RC:C/CR:H/MAV:P/MS:C",
+        "CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:H/VI:H/VA:H/SC:N/SI:N/SA:N/E:A/CR:H/MSI:S/S:P/U:Red",
+      ].each do |input|
+        vec = CVSS.parse(input)
+        h = vec.to_h
+        h.each { |key, code| vec.metric_value(key).should eq(code) }
+        # to_s emits exactly the metrics to_h reports, in the same order.
+        h.map { |key, code| "#{key}:#{code}" }.join("/").should eq(
+          vec.to_s.lchop("CVSS:#{vec.version}/").lchop('(').rchop(')'))
+      end
     end
   end
 
@@ -320,19 +460,138 @@ describe CVSS do
       end
     end
 
-    it "raises ParseError when the payload is valid JSON but not an object" do
-      ["[1, 2, 3]", "null", %("hello"), "42", "true"].each do |payload|
+    it "raises ParseError when the payload cannot hold a vector at all" do
+      # A scalar or null has no depth to search, so it is rejected by shape.
+      ["null", %("hello"), "42", "true"].each do |payload|
         expect_raises(CVSS::ParseError, /JSON payload must be a JSON object/) do
           CVSS.from_json(payload)
         end
       end
     end
 
-    it "raises ParseError when cvssData is not an object" do
+    it "searches a top-level array, and reports an empty one accurately" do
+      # A bare list of NVD records is a container like any other.
+      payload = <<-JSON
+        [{"cve":{"metrics":{"cvssMetricV31":[{"cvssData":{
+          "vectorString":"CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H"}}]}}}]
+        JSON
+      CVSS.from_json(payload).base_score.should eq(9.8)
+
+      expect_raises(CVSS::ParseError, /no vectorString field/) do
+        CVSS.from_json("[1, 2, 3]")
+      end
+    end
+
+    it "searches past a cvssData that is not a CVSS object" do
+      # `cvssData` holding a non-object is not the CVSS object shape at all,
+      # so it falls through to the document search instead of aborting it.
       [%({"cvssData": "x"}), %({"cvssData": [1]}), %({"cvssData": null})].each do |payload|
-        expect_raises(CVSS::ParseError, /cvssData must be a JSON object/) do
+        expect_raises(CVSS::ParseError, /no vectorString field/) do
           CVSS.from_json(payload)
         end
+      end
+
+      payload = %({"cvssData": null, "m": {"vectorString": "AV:N/AC:L/Au:N/C:P/I:P/A:P"}})
+      CVSS.from_json(payload).base_score.should eq(7.5)
+    end
+  end
+
+  describe "CVSS.from_json on nested payloads" do
+    it "finds a vectorString buried in an NVD API 2.0 response" do
+      vec = CVSS.from_json(NVD_API_RESPONSE)
+      vec.should be_a(CVSS::V3::Vector)
+      vec.base_score.should eq(10.0)
+    end
+
+    it "finds a vectorString in the legacy NVD 1.1 feed shape" do
+      payload = <<-JSON
+        {"impact":{"baseMetricV3":{"cvssV3":{
+          "vectorString":"CVSS:3.0/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H"}}}}
+        JSON
+      CVSS.from_json(payload).base_score.should eq(9.8)
+    end
+
+    it "still prefers the flat and cvssData shapes over the deep walk" do
+      CVSS.from_json(%({"vectorString":"AV:N/AC:L/Au:N/C:P/I:P/A:P"}))
+        .should be_a(CVSS::V2::Vector)
+      CVSS.from_json(%({"cvssData":{"vectorString":"AV:N/AC:L/Au:N/C:P/I:P/A:P"}}))
+        .should be_a(CVSS::V2::Vector)
+    end
+
+    it "raises ParseError when no vectorString exists at any depth" do
+      expect_raises(CVSS::ParseError, /no vectorString field/) do
+        CVSS.from_json(%({"cve":{"id":"CVE-1999-0001","metrics":{}}}))
+      end
+    end
+
+    it "still raises for a non-string vectorString the caller named directly" do
+      # The two explicit shapes are a lookup, not a search: the caller said
+      # this is the vector, so a bad value there is an error.
+      expect_raises(CVSS::ParseError, /vectorString must be a string/) do
+        CVSS.from_json(%({"vectorString": 42}))
+      end
+      expect_raises(CVSS::ParseError, /vectorString must be a string/) do
+        CVSS.from_json(%({"cvssData": {"vectorString": 42}}))
+      end
+    end
+
+    it "skips entries the search cannot use rather than letting them hide a vector" do
+      # A real record can carry a placeholder or a version this library does
+      # not implement right beside the vector the caller wants.
+      good = "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H"
+      [
+        %({"a":{"vectorString":null},"b":{"vectorString":"#{good}"}}),
+        %({"a":{"vectorString":""},"b":{"vectorString":"#{good}"}}),
+        %({"a":{"vectorString":"CVSS:9.9/AV:N"},"b":{"vectorString":"#{good}"}}),
+        %({"a":{"vectorString":42},"b":{"vectorString":"#{good}"}}),
+      ].each do |payload|
+        CVSS.from_json(payload).base_score.should eq(9.8)
+        CVSS.from_json?(payload).should_not be_nil
+      end
+    end
+
+    it "reports why the only candidate failed rather than claiming there was none" do
+      expect_raises(CVSS::UnknownVersionError, /unsupported CVSS version: 9.9/) do
+        CVSS.from_json(%({"a":{"vectorString":"CVSS:9.9/AV:N/AC:L"}}))
+      end
+      expect_raises(CVSS::ParseError, /missing required base metric/) do
+        CVSS.from_json(%({"a":{"vectorString":"CVSS:3.1/AV:N"}}))
+      end
+    end
+  end
+
+  describe "CVSS.from_json_all" do
+    it "returns every vector in a payload, in document order" do
+      vectors = CVSS.from_json_all(NVD_API_RESPONSE)
+      vectors.map(&.version).should eq(["3.1", "2.0"])
+      vectors.map(&.base_score).should eq([10.0, 6.8])
+      vectors.max_by(&.base_score).should be_a(CVSS::V3::Vector)
+    end
+
+    it "returns an empty array when the payload holds no vectorString" do
+      CVSS.from_json_all(%({"vulnerabilities":[]})).should be_empty
+      CVSS.from_json_all(%([1, 2, 3])).should be_empty
+    end
+
+    it "reads a flat single-vector payload too" do
+      CVSS.from_json_all(%({"vectorString":"AV:N/AC:L/Au:N/C:P/I:P/A:P"}))
+        .map(&.base_score).should eq([7.5])
+    end
+
+    it "skips non-string vectorString values" do
+      payload = %({"a":{"vectorString":null},"b":{"vectorString":"AV:N/AC:L/Au:N/C:P/I:P/A:P"}})
+      CVSS.from_json_all(payload).map(&.base_score).should eq([7.5])
+    end
+
+    it "raises when any vectorString in the payload is malformed" do
+      expect_raises(CVSS::ParseError) do
+        CVSS.from_json_all(%({"a":{"vectorString":"CVSS:3.1/AV:N"}}))
+      end
+    end
+
+    it "raises UnknownVersionError for an unsupported version in the payload" do
+      expect_raises(CVSS::UnknownVersionError) do
+        CVSS.from_json_all(%({"a":{"vectorString":"CVSS:9.9/AV:N/AC:L"}}))
       end
     end
   end
@@ -347,7 +606,7 @@ describe CVSS do
     it "returns nil for every shape from_json rejects" do
       [
         "not-json",                                     # JSON::ParseException
-        "[1, 2, 3]",                                    # not an object
+        "[1, 2, 3]",                                    # container, but no vectorString
         %({"baseScore": 9.8}),                          # no vectorString
         %({"vectorString": 123}),                       # wrong type
         %({"vectorString": "CVSS:3.1/AV:N"}),           # unparsable vector

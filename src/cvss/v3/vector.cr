@@ -89,7 +89,9 @@ module CVSS::V3
 
     def self.parse(input : String) : Vector
       raw = input.strip
-      unless raw.starts_with?("CVSS:")
+      # The prefix literal is matched case-insensitively (see
+      # `VectorString::PREFIX_RE`); the version and metrics are not.
+      unless raw.size >= 5 && raw[0, 5].compare("CVSS:", case_insensitive: true) == 0
         raise ParseError.new("CVSS v3 vector must start with 'CVSS:'")
       end
 
@@ -181,10 +183,15 @@ module CVSS::V3
       @e, @rl, @rc,
       @cr, @ir, @ar, @mav, @mac, @mpr, @mui, @ms, @mc, @mi, @ma
 
-    # Returns the stored short-code for a metric. Optional metrics that have
-    # not been set return `"X"` (the v3 NotDefined code). Raises
-    # `CVSS::Error` if `name` is not a recognised v3 metric key.
-    def metric_value(name : String) : String
+    protected def metric_order : Array(String)
+      METRIC_ORDER
+    end
+
+    protected def not_defined_code : String
+      "X"
+    end
+
+    def metric_code?(name : String) : String?
       case name
       when "AV"  then @av.code
       when "AC"  then @ac.code
@@ -194,20 +201,20 @@ module CVSS::V3
       when "C"   then @c.code
       when "I"   then @i.code
       when "A"   then @a.code
-      when "E"   then @e.try(&.code) || "X"
-      when "RL"  then @rl.try(&.code) || "X"
-      when "RC"  then @rc.try(&.code) || "X"
-      when "CR"  then @cr.try(&.code) || "X"
-      when "IR"  then @ir.try(&.code) || "X"
-      when "AR"  then @ar.try(&.code) || "X"
-      when "MAV" then @mav.try(&.code) || "X"
-      when "MAC" then @mac.try(&.code) || "X"
-      when "MPR" then @mpr.try(&.code) || "X"
-      when "MUI" then @mui.try(&.code) || "X"
-      when "MS"  then @ms.try(&.code) || "X"
-      when "MC"  then @mc.try(&.code) || "X"
-      when "MI"  then @mi.try(&.code) || "X"
-      when "MA"  then @ma.try(&.code) || "X"
+      when "E"   then @e.try(&.code)
+      when "RL"  then @rl.try(&.code)
+      when "RC"  then @rc.try(&.code)
+      when "CR"  then @cr.try(&.code)
+      when "IR"  then @ir.try(&.code)
+      when "AR"  then @ar.try(&.code)
+      when "MAV" then @mav.try(&.code)
+      when "MAC" then @mac.try(&.code)
+      when "MPR" then @mpr.try(&.code)
+      when "MUI" then @mui.try(&.code)
+      when "MS"  then @ms.try(&.code)
+      when "MC"  then @mc.try(&.code)
+      when "MI"  then @mi.try(&.code)
+      when "MA"  then @ma.try(&.code)
       else            raise CVSS::Error.new("unknown CVSS v3 metric '#{name}'")
       end
     end
@@ -256,37 +263,6 @@ module CVSS::V3
 
     def impacts_availability? : Bool
       !@a.none?
-    end
-
-    # ───── Hash export ─────
-
-    # Returns a `Hash(String, String)` of metric short-codes, in canonical
-    # order. Optional metrics are only included when set.
-    def to_h : Hash(String, String)
-      h = {} of String => String
-      h["AV"] = @av.code
-      h["AC"] = @ac.code
-      h["PR"] = @pr.code
-      h["UI"] = @ui.code
-      h["S"] = @s.code
-      h["C"] = @c.code
-      h["I"] = @i.code
-      h["A"] = @a.code
-      h["E"] = @e.not_nil!.code if @e
-      h["RL"] = @rl.not_nil!.code if @rl
-      h["RC"] = @rc.not_nil!.code if @rc
-      h["CR"] = @cr.not_nil!.code if @cr
-      h["IR"] = @ir.not_nil!.code if @ir
-      h["AR"] = @ar.not_nil!.code if @ar
-      h["MAV"] = @mav.not_nil!.code if @mav
-      h["MAC"] = @mac.not_nil!.code if @mac
-      h["MPR"] = @mpr.not_nil!.code if @mpr
-      h["MUI"] = @mui.not_nil!.code if @mui
-      h["MS"] = @ms.not_nil!.code if @ms
-      h["MC"] = @mc.not_nil!.code if @mc
-      h["MI"] = @mi.not_nil!.code if @mi
-      h["MA"] = @ma.not_nil!.code if @ma
-      h
     end
 
     # ───── Public API ─────
@@ -342,41 +318,7 @@ module CVSS::V3
 
     def to_s(io : IO) : Nil
       io << "CVSS:" << @version
-      METRIC_ORDER.each do |key|
-        case key
-        when "AV"  then write_metric(io, key, @av.code)
-        when "AC"  then write_metric(io, key, @ac.code)
-        when "PR"  then write_metric(io, key, @pr.code)
-        when "UI"  then write_metric(io, key, @ui.code)
-        when "S"   then write_metric(io, key, @s.code)
-        when "C"   then write_metric(io, key, @c.code)
-        when "I"   then write_metric(io, key, @i.code)
-        when "A"   then write_metric(io, key, @a.code)
-        when "E"   then write_optional(io, key, @e)
-        when "RL"  then write_optional(io, key, @rl)
-        when "RC"  then write_optional(io, key, @rc)
-        when "CR"  then write_optional(io, key, @cr)
-        when "IR"  then write_optional(io, key, @ir)
-        when "AR"  then write_optional(io, key, @ar)
-        when "MAV" then write_optional(io, key, @mav)
-        when "MAC" then write_optional(io, key, @mac)
-        when "MPR" then write_optional(io, key, @mpr)
-        when "MUI" then write_optional(io, key, @mui)
-        when "MS"  then write_optional(io, key, @ms)
-        when "MC"  then write_optional(io, key, @mc)
-        when "MI"  then write_optional(io, key, @mi)
-        when "MA"  then write_optional(io, key, @ma)
-        end
-      end
-    end
-
-    private def write_metric(io : IO, key : String, code : String) : Nil
-      io << '/' << key << ':' << code
-    end
-
-    private def write_optional(io : IO, key : String, metric) : Nil
-      return if metric.nil?
-      write_metric(io, key, metric.code)
+      write_metrics(io, separator_before_first: true)
     end
   end
 end

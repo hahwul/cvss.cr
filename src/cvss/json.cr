@@ -15,13 +15,20 @@ require "json"
 # }
 # ```
 #
-# `CVSS.from_json(input)` accepts either:
-#   - A bare CVSS JSON object (`{"vectorString": "..."}`) or
-#   - An NVD-nested payload (`{"cvssData": {"vectorString": "..."}}`)
+# `CVSS.from_json(input)` accepts:
+#   - A bare CVSS JSON object (`{"vectorString": "..."}`),
+#   - An NVD-nested payload (`{"cvssData": {"vectorString": "..."}}`), or
+#   - Any object or array with a `vectorString` somewhere inside it, which
+#     covers a whole NVD API 2.0 response or CVE record unmodified — and a
+#     bare list of them.
 #
-# and returns the parsed Vector. Other JSON fields (baseScore, baseSeverity,
-# etc.) are recomputed from the vectorString — they are never trusted from
-# the input, so a tampered payload still produces a correctly-scored vector.
+# and returns the parsed Vector. `CVSS.from_json_all(input)` returns every
+# vector in the payload instead of just the first — an NVD record commonly
+# scores one CVE under v2.0, v3.1 and v4.0 at once.
+#
+# Other JSON fields (baseScore, baseSeverity, etc.) are recomputed from the
+# vectorString — they are never trusted from the input, so a tampered
+# payload still produces a correctly-scored vector.
 module CVSS
   abstract class Vector
     def to_json(json : ::JSON::Builder) : Nil
@@ -44,15 +51,76 @@ module CVSS
     end
   end
 
-  # Read a Vector from a JSON string or IO. Looks for a `vectorString` key,
-  # either at the top level or nested under `cvssData` (NVD format).
+  # Read a Vector from a JSON string or IO.
+  #
+  # Two shapes are treated as the caller pointing straight at a CVSS object:
+  # a `vectorString` at the top level, and one under `cvssData` (the
+  # NVD/FIRST CVSS object shape). A malformed vector in either is an error —
+  # the caller said that is the vector.
+  #
+  # Anything else is *searched*: the whole document is walked for a
+  # `vectorString`, which is what lets a full NVD API 2.0 response or CVE
+  # record work unmodified, since those bury the CVSS object several levels
+  # down (`vulnerabilities[].cve.metrics.cvssMetricV31[].cvssData
+  # .vectorString`). Because that is a search rather than a lookup, entries
+  # it cannot use are skipped instead of raised on — a record can carry a
+  # placeholder `""` or `null`, or a CVSS version this library does not
+  # implement, right beside the vector the caller actually wants. The first
+  # usable vector in document order wins.
+  #
+  # A payload commonly carries several — an NVD record usually scores a CVE
+  # under v2.0, v3.1 *and* v4.0. Use `from_json_all` when you need all of
+  # them, or want to pick by version yourself.
   def self.from_json(input : String | IO) : Vector
     json = ::JSON.parse(input)
-    if vs = extract_vector_string(json)
-      parse(vs)
-    else
-      raise ParseError.new("no vectorString field in JSON payload")
+
+    # A scalar or null cannot hold a vector at any depth. Reject it by shape,
+    # which says more than "no vectorString field" would.
+    unless json.as_h? || json.as_a?
+      raise ParseError.new("JSON payload must be a JSON object")
     end
+
+    if vs = explicit_vector_string(json)
+      return parse(vs)
+    end
+
+    candidates = [] of String
+    collect_vector_strings(json, candidates)
+    candidates.each do |string|
+      if vector = parse?(string)
+        return vector
+      end
+    end
+
+    raise ParseError.new("no vectorString field in JSON payload") if candidates.empty?
+
+    # The document did hold candidates, none of them usable. Re-run the first
+    # so the caller gets the real reason rather than "no vectorString field".
+    parse(candidates.first)
+  end
+
+  # Every Vector in a JSON payload, in document order.
+  #
+  # Built for the NVD shapes that score one CVE several times over — an API
+  # 2.0 response nests a `cvssData` object per CVSS version — where
+  # `from_json` would hand back only the first.
+  #
+  # ```
+  # vectors = CVSS.from_json_all(File.read("nvd_response.json"))
+  # vectors.map(&.version)       # => ["4.0", "3.1", "2.0"]
+  # vectors.max_by(&.base_score) # worst score across versions
+  # ```
+  #
+  # Unlike `from_json`, a malformed or unsupported `vectorString` raises
+  # rather than being skipped: a caller asking for *all* the vectors cannot
+  # be handed a quietly short list. Values that are not strings at all are
+  # still skipped — those are not vector strings to begin with. Returns an
+  # empty array when the payload holds no `vectorString`.
+  def self.from_json_all(input : String | IO) : Array(Vector)
+    json = ::JSON.parse(input)
+    strings = [] of String
+    collect_vector_strings(json, strings)
+    strings.map { |string| parse(string) }
   end
 
   # Non-raising `from_json` — returns nil when the input is not JSON, is
@@ -74,18 +142,22 @@ module CVSS
     nil
   end
 
-  private def self.extract_vector_string(json : ::JSON::Any) : String?
+  # The `vectorString` of a payload that *is* a CVSS object — top-level, or
+  # wrapped in the `cvssData` key NVD and the FIRST schema use. Returns nil
+  # when the payload is neither, leaving the caller to search it instead.
+  #
+  # A `cvssData` that is not an object is not a CVSS object either, so it
+  # falls through to the search rather than aborting it.
+  private def self.explicit_vector_string(json : ::JSON::Any) : String?
     # `JSON::Any#[]?` raises a bare `Exception` when the value it wraps is
-    # not an object, so every level is unwrapped with `as_h?` first — a
-    # payload of `[…]`, `"…"`, `42` or `null` has to surface as a
-    # `CVSS::ParseError` like any other malformed input.
-    obj = object_field(json, "JSON payload")
+    # not an object, so the payload is unwrapped with `as_h?` first.
+    obj = json.as_h?
+    return if obj.nil?
 
     if vs = obj["vectorString"]?
       return string_field(vs)
     end
-    if cvss_data = obj["cvssData"]?
-      nested = object_field(cvss_data, "cvssData")
+    if nested = obj["cvssData"]?.try(&.as_h?)
       if vs = nested["vectorString"]?
         return string_field(vs)
       end
@@ -93,10 +165,28 @@ module CVSS
     nil
   end
 
-  # Coerce a JSON value to an object, raising `ParseError` (never a raw
-  # `Exception`) when it is any other type.
-  private def self.object_field(value : ::JSON::Any, what : String) : Hash(String, ::JSON::Any)
-    value.as_h? || raise ParseError.new("#{what} must be a JSON object")
+  # Depth-first walk collecting every string-valued `vectorString` into
+  # `into`, in document order.
+  #
+  # Non-string values under that key are skipped rather than raised on. The
+  # walk is a search across a whole document, so an unrelated or placeholder
+  # `"vectorString": null` must not hide the real vector elsewhere in it;
+  # `explicit_vector_string` still raises for the shapes where the caller
+  # named the key themselves.
+  private def self.collect_vector_strings(value : ::JSON::Any, into : Array(String)) : Nil
+    if hash = value.as_h?
+      hash.each do |key, child|
+        if key == "vectorString"
+          if string = child.as_s?
+            into << string
+          end
+        else
+          collect_vector_strings(child, into)
+        end
+      end
+    elsif array = value.as_a?
+      array.each { |child| collect_vector_strings(child, into) }
+    end
   end
 
   # Coerce a `vectorString` JSON value to a String, raising `ParseError`

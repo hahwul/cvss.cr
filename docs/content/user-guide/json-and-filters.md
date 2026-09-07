@@ -36,10 +36,11 @@ Per-version differences:
 
 ## Reading JSON
 
-`CVSS.from_json` accepts either:
+`CVSS.from_json` accepts:
 
-- a flat object with a `vectorString` field, or
-- an NVD-nested payload (`{"cvssData": {"vectorString": "..."}}`)
+- a flat object with a `vectorString` field,
+- an NVD-nested payload (`{"cvssData": {"vectorString": "..."}}`), or
+- any object or array with a `vectorString` somewhere inside it — which covers a whole NVD API 2.0 response or CVE record unmodified, and a bare list of them
 
 ```crystal
 CVSS.from_json(%({"vectorString": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H"}))
@@ -47,6 +48,18 @@ CVSS.from_json(%({"vectorString": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H"
 
 CVSS.from_json(File.read("nvd_response.json"))
 ```
+
+The two flat shapes are a lookup — the caller pointed at the vector, so a malformed one there is an error. Searching the rest of a document is not, so entries the search cannot use (a placeholder `""`, a `null`, a CVSS version this library does not implement) are skipped rather than allowed to hide a real vector sitting beside them. Only a scalar or `null` payload is rejected outright, since it has no depth to search.
+
+A record commonly scores one CVE under several CVSS versions at once. `CVSS.from_json` returns the first usable vector in document order; `CVSS.from_json_all` returns every one of them:
+
+```crystal
+vectors = CVSS.from_json_all(File.read("nvd_response.json"))
+vectors.map(&.version)        # => ["3.1", "2.0"]
+vectors.max_by(&.base_score)  # worst score across versions
+```
+
+`from_json_all` raises like `parse` if any `vectorString` in the payload is malformed — a caller asking for *all* the vectors cannot be handed a quietly short list — and returns an empty array when the payload holds none at all.
 
 `CVSS.from_json?` is the non-raising form. It returns `nil` for everything `from_json` rejects, including the `JSON::ParseException` raised when the input is not JSON at all:
 

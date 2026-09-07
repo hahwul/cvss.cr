@@ -4,6 +4,20 @@ description = "Per-version quirks and spec compliance notes"
 weight = 5
 +++
 
+
+## Vector-string prefixes
+
+The `CVSS:x.y/` prefix is mandatory from CVSS v3.0 onward. v1.0 and v2.0 predate it, so their vectors are normally written bare — `CVSS.parse` accepts them with or without the parentheses NVD renders them in, and tolerates a `CVSS:1.0/` or `CVSS:2.0/` prefix that some tools add for symmetry with v3+.
+
+The prefix literal is matched case-insensitively (`cvss:3.1/…` parses like `CVSS:3.1/…`), because lower- and mixed-case spellings turn up in real feeds. Metric keys and values stay case-sensitive, as the specs require.
+
+A prefix-less string carrying v3.x or v4.0 metrics is reported as an error rather than guessed at — for v3.x the prefix is the only thing that separates v3.0 from v3.1, and the two use different RoundUp and modified-impact formulas:
+
+```crystal
+CVSS.parse("AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H")
+# CVSS::ParseError: vector carries CVSS v3.x metrics but no 'CVSS:3.0/' or 'CVSS:3.1/' prefix; ...
+```
+
 ## CVSS v1.0
 
 - **No standardised vector string.** The FIRST v1.0 guide defines metrics and formulas but never a vector notation. This library uses NVD's — parentheses around the metric list, e.g. `(AV:R/AC:L/Au:NR/C:C/I:C/A:C/B:N)` — which is what every v1-era publisher emitted and what NVD documented at `nvd.nist.gov/cvss.cfm?vectorinfo`. `parse` also accepts the list without parentheses and with a `CVSS:1.0/` prefix; `to_s` always emits the canonical parenthesised form.

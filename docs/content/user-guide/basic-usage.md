@@ -88,7 +88,7 @@ vulns.min.base_score
 
 ## Hash export
 
-`to_h` returns a `Hash(String, String)` of metric short-codes in canonical order:
+`to_h` returns a `Hash(String, String)` of metric short-codes in canonical order. Single metrics come from `metric_value` (which reports the version's not-defined code — `X` for v3.x/v4.0, `ND` for v1.0/v2.0 — when unset) or `metric_code?` (which returns `nil` instead, so an absent metric is distinguishable from one written explicitly as `E:X`):
 
 ```crystal
 CVSS.parse("CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H/E:F").to_h

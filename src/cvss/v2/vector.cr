@@ -67,7 +67,7 @@ module CVSS::V2
 
       # Tolerate an explicit "CVSS:2.0/" prefix even though it isn't part
       # of the v2 spec — some tools emit it for symmetry with v3+.
-      body = raw.starts_with?("CVSS:2.0/") ? raw[("CVSS:2.0/".size)..] : raw
+      body = VectorString.strip_prefix(raw, {"2.0"})
 
       # The v2 guide writes vectors bare, but NVD's v2 calculator renders
       # them parenthesised (`?vector=(AV:N/AC:L/Au:N/C:P/I:P/A:P)`) and
@@ -159,10 +159,15 @@ module CVSS::V2
     def_equals_and_hash @av, @ac, @au, @c, @i, @a,
       @e, @rl, @rc, @cdp, @td, @cr, @ir, @ar
 
-    # Returns the stored short-code for a metric. Optional metrics that have
-    # not been set return `"ND"` (the v2 NotDefined code). Raises
-    # `CVSS::Error` if `name` is not a recognised v2 metric key.
-    def metric_value(name : String) : String
+    protected def metric_order : Array(String)
+      METRIC_ORDER
+    end
+
+    protected def not_defined_code : String
+      "ND"
+    end
+
+    def metric_code?(name : String) : String?
       case name
       when "AV"  then @av.code
       when "AC"  then @ac.code
@@ -170,14 +175,14 @@ module CVSS::V2
       when "C"   then @c.code
       when "I"   then @i.code
       when "A"   then @a.code
-      when "E"   then @e.try(&.code) || "ND"
-      when "RL"  then @rl.try(&.code) || "ND"
-      when "RC"  then @rc.try(&.code) || "ND"
-      when "CDP" then @cdp.try(&.code) || "ND"
-      when "TD"  then @td.try(&.code) || "ND"
-      when "CR"  then @cr.try(&.code) || "ND"
-      when "IR"  then @ir.try(&.code) || "ND"
-      when "AR"  then @ar.try(&.code) || "ND"
+      when "E"   then @e.try(&.code)
+      when "RL"  then @rl.try(&.code)
+      when "RC"  then @rc.try(&.code)
+      when "CDP" then @cdp.try(&.code)
+      when "TD"  then @td.try(&.code)
+      when "CR"  then @cr.try(&.code)
+      when "IR"  then @ir.try(&.code)
+      when "AR"  then @ar.try(&.code)
       else            raise CVSS::Error.new("unknown CVSS v2 metric '#{name}'")
       end
     end
@@ -212,54 +217,11 @@ module CVSS::V2
       !@a.none?
     end
 
-    # ───── Hash export ─────
-
-    # Returns a `Hash(String, String)` of metric short-codes, in canonical
-    # order. Optional metrics are only included when set.
-    def to_h : Hash(String, String)
-      h = {} of String => String
-      h["AV"] = @av.code
-      h["AC"] = @ac.code
-      h["Au"] = @au.code
-      h["C"] = @c.code
-      h["I"] = @i.code
-      h["A"] = @a.code
-      h["E"] = @e.not_nil!.code if @e
-      h["RL"] = @rl.not_nil!.code if @rl
-      h["RC"] = @rc.not_nil!.code if @rc
-      h["CDP"] = @cdp.not_nil!.code if @cdp
-      h["TD"] = @td.not_nil!.code if @td
-      h["CR"] = @cr.not_nil!.code if @cr
-      h["IR"] = @ir.not_nil!.code if @ir
-      h["AR"] = @ar.not_nil!.code if @ar
-      h
-    end
-
+    # Emits the bare v2.0 notation, e.g. `AV:N/AC:L/Au:N/C:P/I:P/A:P` —
+    # no `CVSS:2.0/` prefix and no parentheses, both of which `parse`
+    # nonetheless accepts on input.
     def to_s(io : IO) : Nil
-      emitted = false
-      METRIC_ORDER.each do |key|
-        code =
-          case key
-          when "AV"  then @av.code
-          when "AC"  then @ac.code
-          when "Au"  then @au.code
-          when "C"   then @c.code
-          when "I"   then @i.code
-          when "A"   then @a.code
-          when "E"   then @e.try(&.code)
-          when "RL"  then @rl.try(&.code)
-          when "RC"  then @rc.try(&.code)
-          when "CDP" then @cdp.try(&.code)
-          when "TD"  then @td.try(&.code)
-          when "CR"  then @cr.try(&.code)
-          when "IR"  then @ir.try(&.code)
-          when "AR"  then @ar.try(&.code)
-          end
-        next if code.nil?
-        io << '/' if emitted
-        emitted = true
-        io << key << ':' << code
-      end
+      write_metrics(io, separator_before_first: false)
     end
   end
 end
