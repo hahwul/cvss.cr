@@ -61,6 +61,11 @@ module CVSS
   # under v2.0, v3.1 *and* v4.0 — resolves to the first one in document
   # order. Use `from_json_all` when you need all of them, or want to pick
   # by version yourself.
+  #
+  # The payload itself must still be a JSON *object*: `from_json` describes
+  # one CVSS object, however deeply the caller's document buries it. A
+  # top-level array — a bare list of NVD records, say — is `from_json_all`'s
+  # job, since a list is a statement about several vectors, not one.
   def self.from_json(input : String | IO) : Vector
     json = ::JSON.parse(input)
     if vs = extract_vector_string(json)
