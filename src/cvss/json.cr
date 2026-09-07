@@ -15,13 +15,19 @@ require "json"
 # }
 # ```
 #
-# `CVSS.from_json(input)` accepts either:
-#   - A bare CVSS JSON object (`{"vectorString": "..."}`) or
-#   - An NVD-nested payload (`{"cvssData": {"vectorString": "..."}}`)
+# `CVSS.from_json(input)` accepts:
+#   - A bare CVSS JSON object (`{"vectorString": "..."}`),
+#   - An NVD-nested payload (`{"cvssData": {"vectorString": "..."}}`), or
+#   - Any document with a `vectorString` somewhere inside it, which covers
+#     a whole NVD API 2.0 response or CVE record unmodified.
 #
-# and returns the parsed Vector. Other JSON fields (baseScore, baseSeverity,
-# etc.) are recomputed from the vectorString — they are never trusted from
-# the input, so a tampered payload still produces a correctly-scored vector.
+# and returns the parsed Vector. `CVSS.from_json_all(input)` returns every
+# vector in the payload instead of just the first — an NVD record commonly
+# scores one CVE under v2.0, v3.1 and v4.0 at once.
+#
+# Other JSON fields (baseScore, baseSeverity, etc.) are recomputed from the
+# vectorString — they are never trusted from the input, so a tampered
+# payload still produces a correctly-scored vector.
 module CVSS
   abstract class Vector
     def to_json(json : ::JSON::Builder) : Nil
@@ -44,8 +50,17 @@ module CVSS
     end
   end
 
-  # Read a Vector from a JSON string or IO. Looks for a `vectorString` key,
-  # either at the top level or nested under `cvssData` (NVD format).
+  # Read a Vector from a JSON string or IO. Looks for a `vectorString` key
+  # at the top level, then under `cvssData` (the NVD/FIRST CVSS object
+  # shape), and finally anywhere in the document — which is what makes a
+  # whole NVD API 2.0 response or CVE record work, since those bury the
+  # CVSS object several levels down (`vulnerabilities[].cve.metrics
+  # .cvssMetricV31[].cvssData.vectorString`).
+  #
+  # A payload carrying several vectors — an NVD record usually scores a CVE
+  # under v2.0, v3.1 *and* v4.0 — resolves to the first one in document
+  # order. Use `from_json_all` when you need all of them, or want to pick
+  # by version yourself.
   def self.from_json(input : String | IO) : Vector
     json = ::JSON.parse(input)
     if vs = extract_vector_string(json)
@@ -53,6 +68,28 @@ module CVSS
     else
       raise ParseError.new("no vectorString field in JSON payload")
     end
+  end
+
+  # Every Vector in a JSON payload, in document order.
+  #
+  # Built for the NVD shapes that score one CVE several times over — an API
+  # 2.0 response nests a `cvssData` object per CVSS version — where
+  # `from_json` would hand back only the first.
+  #
+  # ```
+  # vectors = CVSS.from_json_all(File.read("nvd_response.json"))
+  # vectors.map(&.version)       # => ["4.0", "3.1", "2.0"]
+  # vectors.max_by(&.base_score) # worst score across versions
+  # ```
+  #
+  # Raises like `parse` if any `vectorString` in the payload is malformed
+  # or names an unsupported CVSS version. Returns an empty array when the
+  # payload holds no `vectorString` at all.
+  def self.from_json_all(input : String | IO) : Array(Vector)
+    json = ::JSON.parse(input)
+    strings = [] of String
+    collect_vector_strings(json, strings)
+    strings.map { |string| parse(string) }
   end
 
   # Non-raising `from_json` — returns nil when the input is not JSON, is
@@ -90,7 +127,43 @@ module CVSS
         return string_field(vs)
       end
     end
-    nil
+
+    # Neither of the two flat shapes matched, so fall back to a walk of the
+    # whole document. `vectorString` is specific enough a key that finding
+    # one anywhere means the payload is carrying a CVSS object; this is what
+    # lets a full NVD API response through, rather than only the CVSS object
+    # a caller has already dug out of it.
+    found = [] of String
+    collect_vector_strings(json, found, limit: 1)
+    found.first?
+  end
+
+  # Depth-first walk collecting every `vectorString` value into `into`.
+  # Non-string values under that key are an error — a payload that carries
+  # `{"vectorString": 42}` is malformed, not merely uninteresting — while
+  # any other key is simply descended into.
+  private def self.collect_vector_strings(
+    value : ::JSON::Any,
+    into : Array(String),
+    limit : Int32? = nil,
+  ) : Nil
+    return if limit && into.size >= limit
+
+    if hash = value.as_h?
+      hash.each do |key, child|
+        if key == "vectorString"
+          into << string_field(child)
+        else
+          collect_vector_strings(child, into, limit)
+        end
+        return if limit && into.size >= limit
+      end
+    elsif array = value.as_a?
+      array.each do |child|
+        collect_vector_strings(child, into, limit)
+        return if limit && into.size >= limit
+      end
+    end
   end
 
   # Coerce a JSON value to an object, raising `ParseError` (never a raw

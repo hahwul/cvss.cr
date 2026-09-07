@@ -6,7 +6,7 @@ Thanks for your interest in cvss.cr.
 
 ```sh
 shards install
-crystal spec                # 227 examples
+crystal spec                # 266 examples
 crystal tool format --check
 ```
 

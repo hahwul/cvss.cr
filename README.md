@@ -40,6 +40,20 @@ about the version — `(AV:N/AC:L/Au:N/C:P/I:P/A:P)` is v2.0 and
 `(AV:R/AC:L/Au:NR/C:C/I:C/A:C/B:N)` is v1.0. `B` is mandatory in v1.0 and
 defined by no later version, which keeps the two unambiguous.
 
+The `CVSS:` prefix is matched case-insensitively — `cvss:3.1/...` parses
+like `CVSS:3.1/...`, since lower- and mixed-case spellings turn up in real
+feeds. Metric keys and values stay case-sensitive, as the specs require.
+
+From v3.0 onward the `CVSS:x.y/` prefix is mandatory, and for v3.x it is
+the only thing that separates v3.0 from v3.1. A prefix-less vector carrying
+v3 or v4 metrics is therefore reported rather than guessed at:
+
+```crystal
+CVSS.parse("AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H")
+# CVSS::ParseError: vector carries CVSS v3.x metrics but no 'CVSS:3.0/' or
+# 'CVSS:3.1/' prefix; ...
+```
+
 ```crystal
 require "cvss"
 
@@ -142,6 +156,24 @@ vulns.sort.last  # most severe vulnerability
 Cross-version `==` always returns `false` (a v3 vector and a v4 vector are
 never structurally equal even if their scores happen to match).
 
+### Scores across versions
+
+`base_score`, `temporal_score` and `environmental_score` — and the matching
+`severity`, `temporal_severity` and `environmental_severity` — are answered
+by every vector class, so they can be called on a `CVSS::Vector` whose
+version you do not know:
+
+```crystal
+inputs.map { |s| CVSS.parse(s) }.each do |vec|
+  puts "#{vec.version} #{vec.base_score} #{vec.temporal_score} (#{vec.severity})"
+end
+```
+
+CVSS v4.0 folds Threat and Environmental metrics into the single macro-vector
+score, so on a v4 vector `temporal_score` (an alias of `threat_score`) and
+`environmental_score` both return that one score. `nomenclature` tells you
+which label — `CVSS-B`, `CVSS-BT`, `CVSS-BE`, `CVSS-BTE` — the score carries.
+
 ### Sub-scores (CVSS v3.x)
 
 For tooling and debugging you can read the intermediate ISS, Impact and
@@ -181,13 +213,25 @@ puts vec.to_json
 # }
 ```
 
-`CVSS.from_json` reads either a flat object or an NVD-nested
-`{"cvssData": {...}}` payload, recomputing scores from the `vectorString`
-(it never trusts a `baseScore` field in the input):
+`CVSS.from_json` reads a flat object, an NVD-nested `{"cvssData": {...}}`
+payload, or any document with a `vectorString` somewhere inside it — which
+covers a whole NVD API 2.0 response or CVE record unmodified. Scores are
+always recomputed from the `vectorString`; a `baseScore` field in the input
+is never trusted:
 
 ```crystal
 CVSS.from_json(%({"vectorString": "CVSS:3.1/AV:N/..."})).base_score
 CVSS.from_json(File.read("nvd_response.json"))
+```
+
+A record commonly scores one CVE under several CVSS versions at once.
+`CVSS.from_json` returns the first vector in document order;
+`CVSS.from_json_all` returns them all, so you can pick:
+
+```crystal
+vectors = CVSS.from_json_all(File.read("nvd_response.json"))
+vectors.map(&.version)       # => ["3.1", "2.0"]
+vectors.max_by(&.base_score) # worst score across versions
 ```
 
 `CVSS.from_json?` is the non-raising form — it returns `nil` for anything
@@ -225,6 +269,19 @@ canonical order. Optional metrics are omitted when not set.
 CVSS.parse("CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H/E:F").to_h
 # => {"AV" => "N", "AC" => "L", "PR" => "N", "UI" => "N",
 #     "S" => "U", "C" => "H", "I" => "H", "A" => "H", "E" => "F"}
+```
+
+Single metrics come from `metric_value` (which reports the version's
+"not defined" code — `X` for v3.x/v4.0, `ND` for v1.0/v2.0 — when the
+metric is unset) or `metric_code?` (which returns `nil` instead, so you can
+tell an unset metric from one explicitly written as `E:X`):
+
+```crystal
+vec = CVSS.parse("CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H/E:X")
+vec.metric_value("AV")  # => "N"
+vec.metric_value("RL")  # => "X"  (unset)
+vec.metric_code?("E")   # => "X"  (set, explicitly Not Defined)
+vec.metric_code?("RL")  # => nil  (absent from the vector)
 ```
 
 ### MacroVector and Nomenclature (CVSS v4.0)

@@ -63,6 +63,75 @@ module CVSS
     abstract def severity : Severity
     abstract def to_s(io : IO) : Nil
 
+    # Every metric key this version defines, in the order the FIRST
+    # calculator emits them. Drives both `to_h` and `to_s`.
+    abstract def metric_order : Array(String)
+
+    # The short-code stored for `name`, or `nil` when `name` is an optional
+    # metric this vector does not carry. Raises `CVSS::Error` for a key the
+    # version does not define.
+    #
+    # This is the single source of truth for a vector's metric values:
+    # `metric_value`, `to_h` and `to_s` are all derived from it, so the three
+    # cannot drift apart.
+    #
+    # ```
+    # vec = CVSS.parse("CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H")
+    # vec.metric_code?("AV") # => "N"
+    # vec.metric_code?("E")  # => nil
+    # ```
+    abstract def metric_code?(name : String) : String?
+
+    # The code an unset optional metric reports from `metric_value` —
+    # `"X"` from CVSS v3.0 onward, `"ND"` in the v1.0 / v2.0 notation.
+    protected abstract def not_defined_code : String
+
+    # Returns the short-code stored for a metric. Optional metrics that have
+    # not been set report this version's "not defined" code rather than
+    # `nil`; use `metric_code?` to tell the two apart. Raises `CVSS::Error`
+    # if `name` is not a metric key this version defines.
+    #
+    # ```
+    # vec = CVSS.parse("CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H")
+    # vec.metric_value("AV") # => "N"
+    # vec.metric_value("E")  # => "X"
+    # ```
+    def metric_value(name : String) : String
+      metric_code?(name) || not_defined_code
+    end
+
+    # Returns a `Hash(String, String)` of metric short-codes, in canonical
+    # order. Optional metrics are only included when set.
+    #
+    # ```
+    # CVSS.parse("CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H/E:F").to_h
+    # # => {"AV" => "N", ..., "A" => "H", "E" => "F"}
+    # ```
+    def to_h : Hash(String, String)
+      metric_order.each_with_object({} of String => String) do |key, hash|
+        if code = metric_code?(key)
+          hash[key] = code
+        end
+      end
+    end
+
+    # Writes every set metric as `/KEY:CODE`, in canonical order.
+    #
+    # `separator_before_first` says whether the first metric needs its own
+    # leading `/`: true once a `CVSS:x.y` prefix has been written (v3.x,
+    # v4.0), false for the bare v1.0 / v2.0 notation where the first metric
+    # opens the string.
+    protected def write_metrics(io : IO, separator_before_first : Bool) : Nil
+      need_separator = separator_before_first
+      metric_order.each do |key|
+        code = metric_code?(key)
+        next if code.nil?
+        io << '/' if need_separator
+        need_separator = true
+        io << key << ':' << code
+      end
+    end
+
     # Order vectors by their base score. Subclasses do not need to override.
     # Returns nil only if a score is NaN, which never happens for valid
     # CVSS inputs — included for `Float64#<=>` compatibility.
@@ -97,6 +166,40 @@ module CVSS
   # means — that is each version's job.
   module VectorString
     extend self
+
+    # The `CVSS:x.y/` prefix that opens every vector string from CVSS v3.0
+    # onward, and that some tools also put in front of v1.0 / v2.0 vectors.
+    #
+    # Matched case-insensitively. The specs spell the prefix `CVSS:`, but
+    # lower- and mixed-case spellings turn up in real feeds and in
+    # hand-written data. The prefix is a fixed literal, not a metric value,
+    # so accepting any spelling of it introduces no ambiguity — metric keys
+    # and values stay case-sensitive, as the specs require.
+    PREFIX_RE = /\ACVSS:(\d+\.\d+)\//i
+
+    # The CVSS version declared by a `CVSS:x.y/` prefix, or nil when the
+    # string carries none.
+    def prefix_version(body : String) : String?
+      PREFIX_RE.match(body).try(&.[1])
+    end
+
+    # Removes a `CVSS:x.y/` prefix declaring one of `expected`.
+    #
+    # A string with no prefix at all is returned unchanged — v1.0 and v2.0
+    # are normally written without one — while a prefix naming a different
+    # version is an error, so that `V2::Vector.parse` on a v3 string says so
+    # rather than reporting `CVSS` as an unknown metric key.
+    def strip_prefix(body : String, expected : Enumerable(String)) : String
+      md = PREFIX_RE.match(body)
+      return body if md.nil?
+
+      version = md[1]
+      unless expected.includes?(version)
+        wanted = expected.map { |v| "CVSS:#{v}" }.join(" or ")
+        raise ParseError.new("expected #{wanted} prefix, got CVSS:#{version}")
+      end
+      body[md[0].size..]
+    end
 
     def split_metrics(body : String) : Array({String, String})
       raise ParseError.new("empty vector body") if body.empty?

@@ -4,10 +4,6 @@ module CVSS
   module Parser
     extend self
 
-    # CVSS v1.0 and v2.0 have no prefix; v3.0/v3.1/v4.0 all use a
-    # `CVSS:x.y/` prefix.
-    PREFIX_RE = /\ACVSS:(\d+\.\d+)\//
-
     # Impact Bias is a v1.0-only metric — no later version defines a `B`
     # key — so its presence is what tells a v1 vector apart from a v2.0
     # one. Matched at a segment boundary (start of string, a `/`, or the
@@ -15,12 +11,22 @@ module CVSS
     # in `B` cannot stand in for it.
     V1_IMPACT_BIAS_RE = /(?:\A|[\/(])B:/
 
+    # Metric keys no v1.0 or v2.0 vector can carry. A prefix-less string
+    # holding one of these is a v3.x or v4.0 vector that lost its mandatory
+    # `CVSS:x.y/` prefix — worth saying so, because falling through to the
+    # v2 parser reports it as an unknown v2 metric instead.
+    #
+    # v4.0 is tested first: a v4 vector also carries `PR`/`UI`, which the
+    # v3 pattern matches.
+    V4_ONLY_RE = /(?:\A|[\/(])(?:AT|VC|VI|VA|SC|SI|SA|MAT|MVC|MVI|MVA|MSC|MSI|MSA|RE):/
+    V3_ONLY_RE = /(?:\A|[\/(])(?:PR|UI|S|MAV|MAC|MPR|MUI|MS|MC|MI|MA):/
+
     def parse(input : String) : Vector
       raw = input.strip
       raise ParseError.new("empty vector string") if raw.empty?
 
-      if md = PREFIX_RE.match(raw)
-        case md[1]
+      if version = VectorString.prefix_version(raw)
+        case version
         when "1.0"
           # Some tools emit a CVSS:1.0/ prefix for symmetry with v3+;
           # V1::Vector.parse strips it itself.
@@ -34,11 +40,12 @@ module CVSS
         when "4.0"
           V4::Vector.parse(raw)
         else
-          raise UnknownVersionError.new("unsupported CVSS version: #{md[1]}")
+          raise UnknownVersionError.new("unsupported CVSS version: #{version}")
         end
       elsif v1?(raw)
         V1::Vector.parse(raw)
       else
+        reject_unprefixed_v3_or_v4(raw)
         # No prefix, no v1 marker → assume CVSS v2.0
         V2::Vector.parse(raw)
       end
@@ -53,6 +60,24 @@ module CVSS
     # their own parentheses.
     private def v1?(raw : String) : Bool
       V1_IMPACT_BIAS_RE.matches?(raw)
+    end
+
+    # The `CVSS:x.y/` prefix is mandatory from v3.0 onward, and for v3.x it
+    # is also the only thing that separates v3.0 from v3.1 — the metric sets
+    # are identical, but the RoundUp and modified-impact formulas are not.
+    # So a prefix-less v3/v4 vector is reported rather than guessed at.
+    private def reject_unprefixed_v3_or_v4(raw : String) : Nil
+      if V4_ONLY_RE.matches?(raw)
+        raise ParseError.new(
+          "vector carries CVSS v4.0 metrics but no 'CVSS:4.0/' prefix; " \
+          "the prefix is mandatory from CVSS v3.0 onward")
+      end
+      if V3_ONLY_RE.matches?(raw)
+        raise ParseError.new(
+          "vector carries CVSS v3.x metrics but no 'CVSS:3.0/' or 'CVSS:3.1/' " \
+          "prefix; the prefix is mandatory from CVSS v3.0 onward, and is the " \
+          "only thing that distinguishes v3.0 from v3.1")
+      end
     end
   end
 end

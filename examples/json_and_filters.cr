@@ -32,6 +32,42 @@ nvd = <<-JSON
   JSON
 puts CVSS.from_json(nvd).severity # => Critical
 
+puts "\n--- Reading a whole NVD API 2.0 response ---"
+# The CVSS objects sit several levels down, and one CVE is commonly scored
+# under more than one CVSS version. `from_json` takes the first;
+# `from_json_all` takes them all.
+nvd_response = <<-JSON
+  {
+    "vulnerabilities": [{
+      "cve": {
+        "id": "CVE-2021-44228",
+        "metrics": {
+          "cvssMetricV31": [{
+            "source": "nvd@nist.gov",
+            "cvssData": {
+              "version": "3.1",
+              "vectorString": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:C/C:H/I:H/A:H"
+            }
+          }],
+          "cvssMetricV2": [{
+            "source": "nvd@nist.gov",
+            "cvssData": {
+              "version": "2.0",
+              "vectorString": "AV:N/AC:M/Au:N/C:P/I:P/A:P"
+            }
+          }]
+        }
+      }
+    }]
+  }
+  JSON
+
+CVSS.from_json_all(nvd_response).each do |vec|
+  puts "  v#{vec.version}  #{vec.base_score}  #{vec.severity}  #{vec}"
+end
+worst = CVSS.from_json_all(nvd_response).max_by(&.base_score)
+puts "Worst across versions: #{worst.base_score} (v#{worst.version})"
+
 puts "\n--- Filtering with classification helpers ---"
 vulns = [
   "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",      # network, no priv
