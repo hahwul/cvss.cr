@@ -18,7 +18,6 @@ Abstract class. Every concrete vector (`CVSS::V2::Vector`, `CVSS::V3::Vector`, `
 | `base_score : Float64` | Final, rounded base score in `0.0..10.0`. |
 | `severity : Severity` | Qualitative rating (see Severity). |
 | `to_s(io : IO) : Nil` | Writes the canonical vector string to `io`. |
-| `metric_order : Array(String)` | Every metric key this version defines, in canonical order. |
 | `metric_code?(name : String) : String?` | Short-code for one metric, or `nil` when it is optional and unset. Raises `CVSS::Error` for a key the version does not define. |
 
 ## Concrete methods
@@ -33,7 +32,7 @@ Abstract class. Every concrete vector (`CVSS::V2::Vector`, `CVSS::V3::Vector`, `
 | `metric_value(name : String) : String` | Short-code for one metric. Unset optional metrics report the version's not-defined code (`X` for v3.x/v4.0, `ND` for v1.0/v2.0). |
 | `to_h : Hash(String, String)` | Metric short-codes in canonical order. Optional metrics omitted when unset. |
 
-All three are derived from `metric_code?`, so `metric_value`, `to_h` and `to_s` always agree on which metrics a vector carries.
+All three are derived from `metric_code?`, so `metric_value`, `to_h` and `to_s` always agree on which metrics a vector carries. The canonical key order they follow is each subclass's `METRIC_ORDER` constant (`CVSS::V3::Vector::METRIC_ORDER` and friends).
 
 ## Top-level helpers
 

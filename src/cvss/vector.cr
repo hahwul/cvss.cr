@@ -65,7 +65,13 @@ module CVSS
 
     # Every metric key this version defines, in the order the FIRST
     # calculator emits them. Drives both `to_h` and `to_s`.
-    abstract def metric_order : Array(String)
+    #
+    # Protected on purpose: each subclass returns its `METRIC_ORDER`
+    # constant itself, not a copy, and every metric this class emits is
+    # routed through it — handing that array out publicly would let a
+    # caller mutate it and corrupt every vector of that version in the
+    # process. Read the constant directly if you need the list.
+    protected abstract def metric_order : Array(String)
 
     # The short-code stored for `name`, or `nil` when `name` is an optional
     # metric this vector does not carry. Raises `CVSS::Error` for a key the

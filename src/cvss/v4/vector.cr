@@ -218,7 +218,7 @@ module CVSS::V4
       )
     end
 
-    def metric_order : Array(String)
+    protected def metric_order : Array(String)
       METRIC_ORDER
     end
 

@@ -183,7 +183,7 @@ module CVSS::V3
       @e, @rl, @rc,
       @cr, @ir, @ar, @mav, @mac, @mpr, @mui, @ms, @mc, @mi, @ma
 
-    def metric_order : Array(String)
+    protected def metric_order : Array(String)
       METRIC_ORDER
     end
 

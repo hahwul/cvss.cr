@@ -22,7 +22,7 @@ Exception
 
 | Error | Raised when |
 |-------|-------------|
-| `CVSS::ParseError` | The vector string is malformed: empty input, missing required base metric(s), duplicate metric, unknown metric key, malformed segment, leading/trailing slash. Also every structural problem with a `from_json` payload that is still valid JSON: not an object at all (`[…]`, `"…"`, `42`, `null`), a `cvssData` that is not an object, a missing `vectorString` field, or a `vectorString` that is not a string. |
+| `CVSS::ParseError` | The vector string is malformed: empty input, missing required base metric(s), duplicate metric, unknown metric key, malformed segment, leading/trailing slash. Also every structural problem with a `from_json` payload that is still valid JSON: a scalar or `null` payload with no depth to search (`"…"`, `42`, `null`), no usable `vectorString` anywhere in the document, or a non-string `vectorString` under one of the two keys the caller named directly. |
 | `CVSS::InvalidMetricError` | A metric carries a value outside its allowed set (e.g. `AV:Q`). |
 | `CVSS::UnknownVersionError` | The `CVSS:x.y/` prefix references a version this library does not implement (e.g. `CVSS:5.0/...`). |
 

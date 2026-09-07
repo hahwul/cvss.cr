@@ -460,20 +460,39 @@ describe CVSS do
       end
     end
 
-    it "raises ParseError when the payload is valid JSON but not an object" do
-      ["[1, 2, 3]", "null", %("hello"), "42", "true"].each do |payload|
+    it "raises ParseError when the payload cannot hold a vector at all" do
+      # A scalar or null has no depth to search, so it is rejected by shape.
+      ["null", %("hello"), "42", "true"].each do |payload|
         expect_raises(CVSS::ParseError, /JSON payload must be a JSON object/) do
           CVSS.from_json(payload)
         end
       end
     end
 
-    it "raises ParseError when cvssData is not an object" do
+    it "searches a top-level array, and reports an empty one accurately" do
+      # A bare list of NVD records is a container like any other.
+      payload = <<-JSON
+        [{"cve":{"metrics":{"cvssMetricV31":[{"cvssData":{
+          "vectorString":"CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H"}}]}}}]
+        JSON
+      CVSS.from_json(payload).base_score.should eq(9.8)
+
+      expect_raises(CVSS::ParseError, /no vectorString field/) do
+        CVSS.from_json("[1, 2, 3]")
+      end
+    end
+
+    it "searches past a cvssData that is not a CVSS object" do
+      # `cvssData` holding a non-object is not the CVSS object shape at all,
+      # so it falls through to the document search instead of aborting it.
       [%({"cvssData": "x"}), %({"cvssData": [1]}), %({"cvssData": null})].each do |payload|
-        expect_raises(CVSS::ParseError, /cvssData must be a JSON object/) do
+        expect_raises(CVSS::ParseError, /no vectorString field/) do
           CVSS.from_json(payload)
         end
       end
+
+      payload = %({"cvssData": null, "m": {"vectorString": "AV:N/AC:L/Au:N/C:P/I:P/A:P"}})
+      CVSS.from_json(payload).base_score.should eq(7.5)
     end
   end
 
@@ -505,9 +524,38 @@ describe CVSS do
       end
     end
 
-    it "raises ParseError for a non-string vectorString found by the walk" do
+    it "still raises for a non-string vectorString the caller named directly" do
+      # The two explicit shapes are a lookup, not a search: the caller said
+      # this is the vector, so a bad value there is an error.
       expect_raises(CVSS::ParseError, /vectorString must be a string/) do
-        CVSS.from_json(%({"metrics":{"cvssMetricV31":[{"cvssData":{"vectorString":42}}]}}))
+        CVSS.from_json(%({"vectorString": 42}))
+      end
+      expect_raises(CVSS::ParseError, /vectorString must be a string/) do
+        CVSS.from_json(%({"cvssData": {"vectorString": 42}}))
+      end
+    end
+
+    it "skips entries the search cannot use rather than letting them hide a vector" do
+      # A real record can carry a placeholder or a version this library does
+      # not implement right beside the vector the caller wants.
+      good = "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H"
+      [
+        %({"a":{"vectorString":null},"b":{"vectorString":"#{good}"}}),
+        %({"a":{"vectorString":""},"b":{"vectorString":"#{good}"}}),
+        %({"a":{"vectorString":"CVSS:9.9/AV:N"},"b":{"vectorString":"#{good}"}}),
+        %({"a":{"vectorString":42},"b":{"vectorString":"#{good}"}}),
+      ].each do |payload|
+        CVSS.from_json(payload).base_score.should eq(9.8)
+        CVSS.from_json?(payload).should_not be_nil
+      end
+    end
+
+    it "reports why the only candidate failed rather than claiming there was none" do
+      expect_raises(CVSS::UnknownVersionError, /unsupported CVSS version: 9.9/) do
+        CVSS.from_json(%({"a":{"vectorString":"CVSS:9.9/AV:N/AC:L"}}))
+      end
+      expect_raises(CVSS::ParseError, /missing required base metric/) do
+        CVSS.from_json(%({"a":{"vectorString":"CVSS:3.1/AV:N"}}))
       end
     end
   end
@@ -528,6 +576,11 @@ describe CVSS do
     it "reads a flat single-vector payload too" do
       CVSS.from_json_all(%({"vectorString":"AV:N/AC:L/Au:N/C:P/I:P/A:P"}))
         .map(&.base_score).should eq([7.5])
+    end
+
+    it "skips non-string vectorString values" do
+      payload = %({"a":{"vectorString":null},"b":{"vectorString":"AV:N/AC:L/Au:N/C:P/I:P/A:P"}})
+      CVSS.from_json_all(payload).map(&.base_score).should eq([7.5])
     end
 
     it "raises when any vectorString in the payload is malformed" do
@@ -553,7 +606,7 @@ describe CVSS do
     it "returns nil for every shape from_json rejects" do
       [
         "not-json",                                     # JSON::ParseException
-        "[1, 2, 3]",                                    # not an object
+        "[1, 2, 3]",                                    # container, but no vectorString
         %({"baseScore": 9.8}),                          # no vectorString
         %({"vectorString": 123}),                       # wrong type
         %({"vectorString": "CVSS:3.1/AV:N"}),           # unparsable vector

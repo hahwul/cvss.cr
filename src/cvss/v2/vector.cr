@@ -159,7 +159,7 @@ module CVSS::V2
     def_equals_and_hash @av, @ac, @au, @c, @i, @a,
       @e, @rl, @rc, @cdp, @td, @cr, @ir, @ar
 
-    def metric_order : Array(String)
+    protected def metric_order : Array(String)
       METRIC_ORDER
     end
 

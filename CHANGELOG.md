@@ -14,9 +14,18 @@
   another version's prefix (`CVSS::V2::Vector.parse("CVSS:3.1/…")`).
 - `CVSS.from_json` now finds a `vectorString` anywhere in the payload, so a
   whole NVD API 2.0 response or CVE record works unmodified; previously only
-  a top-level or `cvssData`-nested key was found.
+  a top-level or `cvssData`-nested key was found. Top-level arrays — a bare
+  list of records — are searched too. Because searching a document is not
+  the same as being handed a CVSS object, entries the search cannot use (a
+  placeholder `""`, a `null`, an unsupported CVSS version) are skipped
+  rather than allowed to hide a usable vector beside them; the two flat
+  shapes stay strict. A `cvssData` that is not an object now falls through
+  to the search instead of raising, and a payload with candidates that all
+  fail reports why the first one failed rather than "no vectorString field".
 - Add `CVSS.from_json_all`, returning every vector in a payload — an NVD
-  record commonly scores one CVE under v2.0, v3.1 and v4.0 at once.
+  record commonly scores one CVE under v2.0, v3.1 and v4.0 at once. Unlike
+  `from_json` it raises on a malformed `vectorString`, since a caller asking
+  for all of them cannot be handed a quietly short list.
 - Add `CVSS::V4::Vector#temporal_score` / `#temporal_severity` (aliases of
   the Threat accessors). The whole `temporal_*` / `environmental_*` family is
   now answered by every vector class, so it can be called on a
