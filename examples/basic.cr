@@ -4,8 +4,10 @@ require "../src/cvss"
 # Basic Usage
 # =============================================================================
 # CVSS.parse(string) auto-detects the version from the "CVSS:x.y/" prefix.
-# Prefix-less strings are treated as CVSS v2.0, unless they carry a v1.0
-# marker (surrounding parentheses, or the v1-only Impact Bias metric).
+# Prefix-less strings are treated as CVSS v2.0, unless they carry the
+# v1-only Impact Bias metric (B), which marks v1.0, or v3/v4-only metrics,
+# which are rejected because the prefix is mandatory there. Parentheses
+# alone do not mark v1.0: NVD renders v2.0 vectors parenthesised too.
 
 puts "--- Auto-detecting the version ---"
 
