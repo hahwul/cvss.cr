@@ -52,8 +52,9 @@ base = "(AV:R/AC:L/Au:NR/C:C/I:C/A:C/B:N/E:F/RL:O/RC:C"
 end
 
 puts "\n--- Auto-detection & canonicalisation ---"
-# CVSS.parse recognises v1 either by the parentheses or by the v1-only
-# Impact Bias metric, and to_s always emits the canonical parenthesised form.
+# CVSS.parse recognises v1 by a CVSS:1.0/ prefix or, without one, by the
+# v1-only Impact Bias metric (parentheses alone could be NVD's v2.0
+# rendering), and to_s always emits the canonical parenthesised form.
 [
   "(AV:R/AC:H/Au:NR/C:P/I:P/A:P/B:N)",
   "AV:R/AC:H/Au:NR/C:P/I:P/A:P/B:N",

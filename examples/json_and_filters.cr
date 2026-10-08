@@ -69,12 +69,13 @@ worst = CVSS.from_json_all(nvd_response).max_by(&.base_score)
 puts "Worst across versions: #{worst.base_score} (v#{worst.version})"
 
 puts "\n--- Filtering with classification helpers ---"
+# Known-good literals, so strict parse; for untrusted feeds use parse? and skip nils.
 vulns = [
-  "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",      # network, no priv
-  "CVSS:3.1/AV:L/AC:L/PR:H/UI:N/S:U/C:H/I:H/A:H",      # local, privileged
-  "CVSS:3.1/AV:N/AC:L/PR:N/UI:R/S:C/C:L/I:L/A:N",      # XSS-style
-  "CVSS:3.1/AV:P/AC:H/AT:P/PR:H/UI:N/S:U/C:H/I:H/A:H", # physical
-].compact_map { |s| CVSS.parse?(s).as?(CVSS::V3::Vector) }
+  "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H", # network, no priv
+  "CVSS:3.1/AV:L/AC:L/PR:H/UI:N/S:U/C:H/I:H/A:H", # local, privileged
+  "CVSS:3.1/AV:N/AC:L/PR:N/UI:R/S:C/C:L/I:L/A:N", # XSS-style
+  "CVSS:3.1/AV:P/AC:H/PR:H/UI:N/S:U/C:H/I:H/A:H", # physical
+].map { |s| CVSS::V3::Vector.parse(s) }
 
 puts "Network attacks needing no auth:"
 vulns.select { |v| v.network? && !v.requires_privileges? }
