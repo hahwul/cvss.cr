@@ -12,6 +12,8 @@ module CVSS::V3
     # Avoids the floating-point traps in the v3.0 ceiling/10 formulation by
     # working in integer space first.
     def roundup31(input : Float64) : Float64
+      unsnapped_roundup(input).try { |rounded| return rounded }
+
       int_input = (input * 100_000.0).round.to_i64
       if int_input.remainder(10_000) == 0
         int_input.to_f / 100_000.0
@@ -24,8 +26,21 @@ module CVSS::V3
     # multiplication is run through an integer round-trip so values like
     # `4.65 * 10 = 46.4999...` don't quietly become 4.6.
     def roundup30(input : Float64) : Float64
+      unsnapped_roundup(input).try { |rounded| return rounded }
+
       int_input = (input * 100_000.0).round.to_i64
       ((int_input + 9_999) // 10_000).to_f / 10.0
+    end
+
+    # The RoundUp of an input the five-decimal snap cannot take, or nil when
+    # it can. NaN and ±Infinity have no integer form, and past
+    # `CVSS::ROUND1_SNAP_LIMIT` the snap overflows `to_i64`. Scoring never
+    # gets there, but both RoundUps are public, so — like `CVSS.round1` —
+    # they return a non-finite input unchanged and fall back to the plain
+    # float ceiling for a huge one, instead of raising OverflowError.
+    private def unsnapped_roundup(input : Float64) : Float64?
+      return input unless input.finite?
+      (input * 10.0).ceil / 10.0 if input.abs >= CVSS::ROUND1_SNAP_LIMIT
     end
 
     def roundup(input : Float64, version : String) : Float64
