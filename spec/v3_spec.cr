@@ -349,6 +349,24 @@ describe CVSS::V3::Vector do
       CVSS::V3::Score.roundup30(4.65).should eq(4.7)
     end
 
+    # Both RoundUps are public. Their five-decimal snap goes through
+    # `to_i64`, which raises OverflowError on non-finite input and past
+    # `CVSS::ROUND1_SNAP_LIMIT`; like `CVSS.round1` they must degrade instead.
+    it "returns non-finite input unchanged instead of raising" do
+      {CVSS::V3::Score.roundup31(Float64::NAN), CVSS::V3::Score.roundup30(Float64::NAN)}.each(&.nan?.should(be_true))
+      [Float64::INFINITY, -Float64::INFINITY].each do |x|
+        CVSS::V3::Score.roundup31(x).should eq(x)
+        CVSS::V3::Score.roundup30(x).should eq(x)
+      end
+    end
+
+    it "falls back to the float ceiling past the Int64 snap boundary" do
+      CVSS::V3::Score.roundup31(1.0e20).should eq(1.0e20)
+      CVSS::V3::Score.roundup30(1.0e20).should eq(1.0e20)
+      CVSS::V3::Score.roundup31(1.0e14 + 0.25).should eq(1.0e14 + 0.3)
+      CVSS::V3::Score.roundup30(-1.0e14).should eq(-1.0e14)
+    end
+
     # Deliberate divergence from FIRST's cvsscalc30.js, which implements
     # RoundUp as `Math.ceil(input * 10) / 10` over raw floats. 5.0 * 0.92 is
     # exactly 4.6, but binary arithmetic yields 4.6000000000000005 and the
