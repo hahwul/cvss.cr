@@ -380,7 +380,7 @@ describe CVSS do
     it "emits only FIRST v4.0 schema fields for v4" do
       v = CVSS.parse("CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:H/VI:H/VA:H/SC:N/SI:N/SA:N/E:A/MAV:P/AU:Y")
       json = JSON.parse(v.to_json).as_h
-      json.keys.sort.should eq(%w[baseScore baseSeverity vectorString version])
+      json.keys.sort!.should eq(%w[baseScore baseSeverity vectorString version])
       json["version"].as_s.should eq("4.0")
       json["vectorString"].as_s.should eq(v.to_s)
       json["baseScore"].as_f.should eq(v.base_score)
