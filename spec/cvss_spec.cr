@@ -374,18 +374,17 @@ describe CVSS do
       json["environmentalScore"]?.should be_nil
     end
 
-    it "emits the macro vector for v4" do
-      v = CVSS.parse("CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:H/VI:H/VA:H/SC:N/SI:N/SA:N")
-      json = JSON.parse(v.to_json)
-      json["macroVector"].as_s.should eq("000200")
-    end
-
-    it "emits the spec §6 nomenclature for v4" do
-      base = CVSS.parse("CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:H/VI:H/VA:H/SC:N/SI:N/SA:N")
-      JSON.parse(base.to_json)["nomenclature"].as_s.should eq("CVSS-B")
-
-      bte = CVSS.parse("CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:H/VI:H/VA:H/SC:N/SI:N/SA:N/E:A/MAV:P")
-      JSON.parse(bte.to_json)["nomenclature"].as_s.should eq("CVSS-BTE")
+    # FIRST's cvss-v4.0.json sets `unevaluatedProperties: false`, so any
+    # field beyond the schema's own makes the object invalid — as embedded
+    # in a CVE JSON 5 record's `cvssV4_0`, for one.
+    it "emits only FIRST v4.0 schema fields for v4" do
+      v = CVSS.parse("CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:H/VI:H/VA:H/SC:N/SI:N/SA:N/E:A/MAV:P/AU:Y")
+      json = JSON.parse(v.to_json).as_h
+      json.keys.should eq(%w[version vectorString baseScore baseSeverity])
+      json["version"].as_s.should eq("4.0")
+      json["vectorString"].as_s.should eq(v.to_s)
+      json["baseScore"].as_f.should eq(v.base_score)
+      json["baseSeverity"].as_s.should eq(v.severity.to_s.upcase)
     end
 
     it "handles v2 vectors (no Critical band)" do

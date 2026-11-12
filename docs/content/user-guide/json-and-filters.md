@@ -32,7 +32,7 @@ Per-version differences:
 
 - **v1.0**, **v2** and **v3.x** add `temporalScore`/`temporalSeverity` and `environmentalScore`/`environmentalSeverity` only when the corresponding optional metrics are present in the vector.
 - **v3.x** always includes `exploitabilityScore` and `impactScore` (rounded to one decimal, matching NVD).
-- **v4.0** adds `macroVector` instead of separate temporal/environmental fields.
+- **v4.0** emits only `version`, `vectorString`, `baseScore` and `baseSeverity`. FIRST's v4.0 schema rejects any other field, so `macro_vector` and `nomenclature` are methods, not JSON fields.
 
 ## Reading JSON
 

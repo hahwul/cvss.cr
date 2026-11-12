@@ -9,7 +9,7 @@ puts "--- to_json (NVD-shaped) ---"
 v3 = CVSS.parse("CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H/E:F/RL:O/RC:C")
 puts v3.to_json
 
-puts "\n--- v4 to_json adds the macro vector ---"
+puts "\n--- v4 to_json (FIRST v4.0 schema fields only) ---"
 v4 = CVSS.parse("CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:H/VI:H/VA:H/SC:N/SI:N/SA:N")
 puts v4.to_json
 
