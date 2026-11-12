@@ -129,7 +129,10 @@ vulns = inputs.map { |s| CVSS.parse(s) }
 # All network-reachable, no-privilege issues sorted worst-first
 high_risk = vulns
   .select { |v| v.responds_to?(:network?) && v.network? }
-  .reject { |v| v.responds_to?(:requires_privileges?) && v.requires_privileges? }
+  .reject { |v|
+    (v.responds_to?(:requires_privileges?) && v.requires_privileges?) ||
+      (v.responds_to?(:requires_authentication?) && v.requires_authentication?)
+  }
   .sort
   .reverse
 

@@ -113,7 +113,7 @@ module CVSS
   # under v2.0, v3.1 *and* v4.0. Use `from_json_all` when you need all of
   # them, or want to pick by version yourself.
   def self.from_json(input : String | IO) : Vector
-    json = ::JSON.parse(input)
+    json = parse_json(input)
 
     # A scalar or null cannot hold a vector at any depth. Reject it by shape,
     # which says more than "no vectorString field" would.
@@ -158,7 +158,7 @@ module CVSS
   # still skipped — those are not vector strings to begin with. Returns an
   # empty array when the payload holds no `vectorString`.
   def self.from_json_all(input : String | IO) : Array(Vector)
-    json = ::JSON.parse(input)
+    json = parse_json(input)
     strings = [] of String
     collect_vector_strings(json, strings)
     strings.map { |string| parse(string) }
@@ -181,6 +181,18 @@ module CVSS
     from_json(input)
   rescue Error | ::JSON::ParseException
     nil
+  end
+
+  # `JSON.parse`, with invalid UTF-8 in an `IO` payload reported as a
+  # `ParseError`. Reading from an IO, the lexer decodes characters and
+  # raises a bare `InvalidByteSequenceError` on a stray byte, which is
+  # neither a `CVSS::Error` nor a `JSON::ParseException` and so would
+  # escape `from_json?`. (A `String` payload never gets that far: its
+  # bytes reach `parse`, which rejects them itself.)
+  private def self.parse_json(input : String | IO) : ::JSON::Any
+    ::JSON.parse(input)
+  rescue ex : InvalidByteSequenceError
+    raise ParseError.new("JSON payload is not valid UTF-8: #{ex.message}")
   end
 
   # The `vectorString` of a payload that *is* a CVSS object — top-level, or

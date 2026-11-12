@@ -25,6 +25,10 @@
   `ArgumentError` ("Regex match error: UTF-8 error") on a vector string
   that is not valid UTF-8 — which escaped `parse?` and `from_json?` too.
   They now raise `CVSS::ParseError`.
+- `CVSS.from_json` / `from_json_all` raising a bare
+  `InvalidByteSequenceError` for an `IO` payload that is not valid UTF-8,
+  which `from_json?` let escape as well. They now raise
+  `CVSS::ParseError`, and `from_json?` returns `nil`.
 
 ## v0.3.0
 

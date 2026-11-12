@@ -260,13 +260,17 @@ CVSS.from_json?(untrusted_payload).try(&.base_score)
 
 ### Classification helpers
 
-Every Vector exposes predicate methods for the most common filtering
-queries — useful for triaging large vulnerability lists:
+The vector classes expose predicate methods for the most common filtering
+queries — useful for triaging large vulnerability lists. A helper marked
+with versions exists only on those classes, so on a `CVSS::Vector` of
+unknown version guard it with `responds_to?`:
 
 ```crystal
 vec.network?                   # AV:N
+vec.adjacent_network?          # AV:A (v2, v3, v4)
 vec.local?                     # AV:L
 vec.physical?                  # AV:P (v3, v4)
+vec.remote?                    # AV:R (v1 only; network? is an alias)
 vec.requires_privileges?       # PR != N (v3, v4)
 vec.requires_authentication?   # Au != N (v2), Au:R (v1)
 vec.requires_user_interaction? # UI != N (v3, v4)

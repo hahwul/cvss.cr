@@ -892,7 +892,10 @@ describe CVSS do
     it "keeps from_json? non-raising and from_json_all typed" do
       payload = %({"vectorString":"AV:N/AC:L/Au:N/C:P/I:P/A:\xff"})
       CVSS.from_json?(payload).should be_nil
+      CVSS.from_json?(IO::Memory.new(payload)).should be_nil
       expect_raises(CVSS::ParseError, "not valid UTF-8") { CVSS.from_json_all("[#{payload}]") }
+      expect_raises(CVSS::ParseError, "not valid UTF-8") { CVSS.from_json(IO::Memory.new(payload)) }
+      expect_raises(CVSS::ParseError, "not valid UTF-8") { CVSS.from_json_all(IO::Memory.new(payload)) }
       # A search skips the unusable entry rather than letting it hide a good one.
       CVSS.from_json(%({"a":#{payload},"b":{"vectorString":"AV:N/AC:L/Au:N/C:P/I:P/A:P"}}))
         .to_s.should eq("AV:N/AC:L/Au:N/C:P/I:P/A:P")
