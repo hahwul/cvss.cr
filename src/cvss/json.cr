@@ -2,22 +2,45 @@ require "json"
 
 # JSON serialization for CVSS vectors.
 #
-# `Vector#to_json` emits a payload modeled after the FIRST CVSS JSON Schema
-# (https://www.first.org/cvss/cvss-v3.1.json) and the NVD CVE feed format,
-# limited to the fields that round-trip cleanly. FIRST's v4.0 schema sets
-# `unevaluatedProperties: false`, rejecting any property it does not
-# define, so a v4 object carries only the four fields below —
-# `macro_vector` and `nomenclature` are methods on `CVSS::V4::Vector`,
-# not JSON fields:
+# `Vector#to_json` emits the CVSS object FIRST's JSON schemas define
+# (https://www.first.org/cvss/cvss-v2.0.json, -v3.0, -v3.1, -v4.0) — the
+# shape of NVD's `cvssData` and of a CVE JSON 5 `cvssV2_0`..`cvssV4_0`.
+# Besides the scores, every metric the vector carries is spelled out under
+# the schema's property name and enum value (`attackVector: "NETWORK"`).
+# A metric is emitted exactly when it appears in `vectorString`: an explicit
+# `X` / `ND` becomes `"NOT_DEFINED"`, as NVD does, and an omitted one is
+# left out, so the object never claims more than the vector says.
 #
 # ```json
 # {
 #   "version": "3.1",
 #   "vectorString": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
 #   "baseScore": 9.8,
-#   "baseSeverity": "CRITICAL"
+#   "baseSeverity": "CRITICAL",
+#   "exploitabilityScore": 3.9,
+#   "impactScore": 5.9,
+#   "attackVector": "NETWORK",
+#   "attackComplexity": "LOW",
+#   "privilegesRequired": "NONE",
+#   "userInteraction": "NONE",
+#   "scope": "UNCHANGED",
+#   "confidentialityImpact": "HIGH",
+#   "integrityImpact": "HIGH",
+#   "availabilityImpact": "HIGH"
 # }
 # ```
+#
+# A few fields sit outside the FIRST schemas and are kept as extensions,
+# which the v2.0 and v3.x schemas permit (they do not forbid additional
+# properties): `baseSeverity`, `temporalSeverity` and
+# `environmentalSeverity` on v2.0 (NVD's severity bands — the v2 guide
+# defines none, and NVD puts `baseSeverity` beside `cvssData`, not in it),
+# and `exploitabilityScore` / `impactScore` on v3.x (NVD carries those
+# beside `cvssData` too). FIRST's v4.0 schema sets
+# `unevaluatedProperties: false` and, as of Revision 2, defines no threat
+# or environmental score, so a v4 object carries the schema's properties
+# only — `macro_vector` and `nomenclature` are methods, not JSON fields.
+# v1.0 has no FIRST schema; its object keeps the score fields alone.
 #
 # `CVSS.from_json(input)` accepts:
 #   - A bare CVSS JSON object (`{"vectorString": "..."}`),
@@ -52,6 +75,20 @@ module CVSS
 
     protected def severity_label(s : Severity) : String
       s.to_s.upcase
+    end
+
+    # Writes each `{property, value}` pair whose metric the vector carries,
+    # the value spelled as the schema's enum.
+    protected def write_metric_fields(json : ::JSON::Builder, metrics : Tuple) : Nil
+      metrics.each do |name, value|
+        json.field name, schema_enum(value) if value
+      end
+    end
+
+    # The FIRST schema's spelling of a metric value: `AdjacentNetwork` →
+    # `"ADJACENT_NETWORK"`, `NotDefined` → `"NOT_DEFINED"`.
+    protected def schema_enum(value : Enum) : String
+      value.to_s.underscore.upcase
     end
   end
 
@@ -222,6 +259,22 @@ module CVSS::V2
   class Vector < CVSS::Vector
     protected def write_json_fields(json : ::JSON::Builder) : Nil
       super
+      write_metric_fields(json, {
+        {"accessVector", @av},
+        {"accessComplexity", @ac},
+        {"authentication", @au},
+        {"confidentialityImpact", @c},
+        {"integrityImpact", @i},
+        {"availabilityImpact", @a},
+        {"exploitability", @e},
+        {"remediationLevel", @rl},
+        {"reportConfidence", @rc},
+        {"collateralDamagePotential", @cdp},
+        {"targetDistribution", @td},
+        {"confidentialityRequirement", @cr},
+        {"integrityRequirement", @ir},
+        {"availabilityRequirement", @ar},
+      })
       if @e || @rl || @rc
         ts = temporal_score
         json.field "temporalScore", ts
@@ -242,6 +295,30 @@ module CVSS::V3
       super
       json.field "exploitabilityScore", CVSS.round1(exploitability_subscore)
       json.field "impactScore", CVSS.round1(impact_subscore)
+      write_metric_fields(json, {
+        {"attackVector", @av},
+        {"attackComplexity", @ac},
+        {"privilegesRequired", @pr},
+        {"userInteraction", @ui},
+        {"scope", @s},
+        {"confidentialityImpact", @c},
+        {"integrityImpact", @i},
+        {"availabilityImpact", @a},
+        {"exploitCodeMaturity", @e},
+        {"remediationLevel", @rl},
+        {"reportConfidence", @rc},
+        {"confidentialityRequirement", @cr},
+        {"integrityRequirement", @ir},
+        {"availabilityRequirement", @ar},
+        {"modifiedAttackVector", @mav},
+        {"modifiedAttackComplexity", @mac},
+        {"modifiedPrivilegesRequired", @mpr},
+        {"modifiedUserInteraction", @mui},
+        {"modifiedScope", @ms},
+        {"modifiedConfidentialityImpact", @mc},
+        {"modifiedIntegrityImpact", @mi},
+        {"modifiedAvailabilityImpact", @ma},
+      })
 
       if @e || @rl || @rc
         ts = temporal_score
@@ -260,6 +337,68 @@ module CVSS::V3
       !(@cr.nil? && @ir.nil? && @ar.nil? &&
         @mav.nil? && @mac.nil? && @mpr.nil? && @mui.nil? && @ms.nil? &&
         @mc.nil? && @mi.nil? && @ma.nil?)
+    end
+  end
+end
+
+module CVSS::V4
+  class Vector < CVSS::Vector
+    protected def write_json_fields(json : ::JSON::Builder) : Nil
+      super
+      write_metric_fields(json, {
+        {"attackVector", @av},
+        {"attackComplexity", @ac},
+        {"attackRequirements", @at},
+        {"privilegesRequired", @pr},
+        {"userInteraction", @ui},
+        {"vulnConfidentialityImpact", @vc},
+        {"vulnIntegrityImpact", @vi},
+        {"vulnAvailabilityImpact", @va},
+        {"subConfidentialityImpact", @sc},
+        {"subIntegrityImpact", @si},
+        {"subAvailabilityImpact", @sa},
+        {"exploitMaturity", @e},
+        {"confidentialityRequirement", @cr},
+        {"integrityRequirement", @ir},
+        {"availabilityRequirement", @ar},
+        {"modifiedAttackVector", @mav},
+        {"modifiedAttackComplexity", @mac},
+        {"modifiedAttackRequirements", @mat},
+        {"modifiedPrivilegesRequired", @mpr},
+        {"modifiedUserInteraction", @mui},
+        {"modifiedVulnConfidentialityImpact", @mvc},
+        {"modifiedVulnIntegrityImpact", @mvi},
+        {"modifiedVulnAvailabilityImpact", @mva},
+        {"modifiedSubConfidentialityImpact", @msc},
+        {"modifiedSubIntegrityImpact", @msi},
+        {"modifiedSubAvailabilityImpact", @msa},
+        {"Safety", @s},
+        {"Automatable", @au},
+        {"Recovery", @r},
+        {"valueDensity", @v},
+        {"vulnerabilityResponseEffort", @re},
+        {"providerUrgency", @u},
+      })
+    end
+
+    # v4.0 spells three values differently from the generic mapping: `AV:A`
+    # is `ADJACENT` (not v3's `ADJACENT_NETWORK`), `E:P` is
+    # `PROOF_OF_CONCEPT`, and `N` on the modified subsequent-system metrics
+    # is `NEGLIGIBLE` (spec §4.2; schema `modifiedSubCType` /
+    # `modifiedSubIaType`), while unmodified `SC/SI/SA:N` stay `NONE`.
+    protected def schema_enum(value : Enum) : String
+      case value
+      when AttackVector::AdjacentNetwork, ModifiedAttackVector::AdjacentNetwork
+        "ADJACENT"
+      when ExploitMaturity::POC
+        "PROOF_OF_CONCEPT"
+      when ModifiedSubsequentConfidentiality::None,
+           ModifiedSubsequentIntegrity::None,
+           ModifiedSubsequentAvailability::None
+        "NEGLIGIBLE"
+      else
+        super
+      end
     end
   end
 end

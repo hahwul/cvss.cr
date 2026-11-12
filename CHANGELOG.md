@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+### Added
+
+- `Vector#to_json` now emits the metric properties FIRST's cvss-v2.0,
+  v3.0, v3.1 and v4.0 JSON schemas define (`accessVector`, `attackVector`,
+  `exploitMaturity`, `modifiedScope`, `Safety`, …), with the schemas' enum
+  values, as NVD's `cvssData` does. A metric appears exactly when the
+  vector carries it; an explicit `X`/`ND` is `"NOT_DEFINED"`. Existing
+  fields are unchanged.
+
 ### Changed
 
 - `CVSS::V4::Vector#to_json` no longer emits `macroVector` and

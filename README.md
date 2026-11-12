@@ -193,8 +193,9 @@ unclamped value.
 
 ### JSON serialization
 
-`Vector#to_json` produces a payload aligned with the FIRST CVSS JSON Schema
-and the NVD CVE feed format:
+`Vector#to_json` produces the CVSS object FIRST's JSON schemas define (the
+shape of NVD's `cvssData`), with every metric in the vector spelled out
+under the schema's property name and enum value:
 
 ```crystal
 require "json"
@@ -208,6 +209,12 @@ puts vec.to_json
 #   "baseSeverity": "CRITICAL",
 #   "exploitabilityScore": 3.9,
 #   "impactScore": 5.9,
+#   "attackVector": "NETWORK",
+#   ...
+#   "availabilityImpact": "HIGH",
+#   "exploitCodeMaturity": "FUNCTIONAL",
+#   "remediationLevel": "OFFICIAL_FIX",
+#   "reportConfidence": "CONFIRMED",
 #   "temporalScore": 9.1,
 #   "temporalSeverity": "CRITICAL"
 # }
