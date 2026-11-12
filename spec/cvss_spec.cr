@@ -862,6 +862,46 @@ describe CVSS do
     end
   end
 
+  # Crystal's regex engine raises a bare ArgumentError on invalid UTF-8,
+  # which used to escape every parser except v3, and `parse?` /
+  # `from_json?` with it.
+  describe "Invalid UTF-8 input" do
+    bad = {
+      "CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:H/VI:H/VA:H/SC:N/SI:N/SA:\xff",
+      "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:\xff",
+      "AV:N/AC:L/Au:N/C:P/I:P/A:\xff",
+      "(AV:R/AC:L/Au:NR/C:C/I:C/A:C/B:\xff)",
+      "\xffCVSS:3.1/AV:N",
+    }
+
+    it "raises ParseError from CVSS.parse and nil from CVSS.parse?" do
+      bad.each do |s|
+        expect_raises(CVSS::ParseError, "not valid UTF-8") { CVSS.parse(s) }
+        CVSS.parse?(s).should be_nil
+      end
+    end
+
+    it "raises ParseError from every version-specific parser" do
+      expect_raises(CVSS::ParseError, "not valid UTF-8") { CVSS::V1::Vector.parse(bad[3]) }
+      expect_raises(CVSS::ParseError, "not valid UTF-8") { CVSS::V2::Vector.parse(bad[2]) }
+      expect_raises(CVSS::ParseError, "not valid UTF-8") { CVSS::V3::Vector.parse(bad[1]) }
+      expect_raises(CVSS::ParseError, "not valid UTF-8") { CVSS::V4::Vector.parse(bad[0]) }
+      CVSS::V4::Vector.parse?(bad[0]).should be_nil
+    end
+
+    it "keeps from_json? non-raising and from_json_all typed" do
+      payload = %({"vectorString":"AV:N/AC:L/Au:N/C:P/I:P/A:\xff"})
+      CVSS.from_json?(payload).should be_nil
+      CVSS.from_json?(IO::Memory.new(payload)).should be_nil
+      expect_raises(CVSS::ParseError, "not valid UTF-8") { CVSS.from_json_all("[#{payload}]") }
+      expect_raises(CVSS::ParseError, "not valid UTF-8") { CVSS.from_json(IO::Memory.new(payload)) }
+      expect_raises(CVSS::ParseError, "not valid UTF-8") { CVSS.from_json_all(IO::Memory.new(payload)) }
+      # A search skips the unusable entry rather than letting it hide a good one.
+      CVSS.from_json(%({"a":#{payload},"b":{"vectorString":"AV:N/AC:L/Au:N/C:P/I:P/A:P"}}))
+        .to_s.should eq("AV:N/AC:L/Au:N/C:P/I:P/A:P")
+    end
+  end
+
   describe "Round-trip via JSON across diverse vectors" do
     it "parse → to_json → from_json preserves the vector" do
       [

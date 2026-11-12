@@ -100,13 +100,13 @@ Predicate methods make filtering large vulnerability lists ergonomic:
 
 ```crystal
 vec.network?                   # AV:N
-vec.adjacent_network?          # AV:A
+vec.adjacent_network?          # AV:A    (v2, v3, v4)
 vec.local?                     # AV:L
 vec.physical?                  # AV:P    (v3, v4)
 vec.requires_privileges?       # PR != N (v3, v4)
 vec.requires_authentication?   # Au != N (v2), Au:R (v1)
 vec.remote?                    # AV:R    (v1 only; network? is an alias)
-vec.requires_user_interaction? # UI != N
+vec.requires_user_interaction? # UI != N (v3, v4)
 vec.scope_changed?             # S:C    (v3 only)
 vec.impacts_subsequent_system? # any of SC/SI/SA != N (v4 only)
 vec.impacts_confidentiality?
@@ -129,7 +129,10 @@ vulns = inputs.map { |s| CVSS.parse(s) }
 # All network-reachable, no-privilege issues sorted worst-first
 high_risk = vulns
   .select { |v| v.responds_to?(:network?) && v.network? }
-  .reject(&.requires_privileges?)
+  .reject { |v|
+    (v.responds_to?(:requires_privileges?) && v.requires_privileges?) ||
+      (v.responds_to?(:requires_authentication?) && v.requires_authentication?)
+  }
   .sort
   .reverse
 
