@@ -374,17 +374,76 @@ describe CVSS do
       json["environmentalScore"]?.should be_nil
     end
 
+    # The metric properties FIRST's cvss-v*.json schemas define, and NVD
+    # fills in `cvssData`: each metric in the vector, schema-named, with its
+    # enum value; explicit `X`/`ND` is `NOT_DEFINED`, an absent one omitted.
+    it "spells out v2 metrics under the v2.0 schema's names" do
+      v = CVSS.parse("AV:A/AC:M/Au:S/C:N/I:P/A:C/E:POC/RL:ND/CDP:LM/CR:H")
+      json = JSON.parse(v.to_json).as_h
+      {
+        "accessVector" => "ADJACENT_NETWORK", "accessComplexity" => "MEDIUM",
+        "authentication" => "SINGLE", "confidentialityImpact" => "NONE",
+        "integrityImpact" => "PARTIAL", "availabilityImpact" => "COMPLETE",
+        "exploitability" => "PROOF_OF_CONCEPT", "remediationLevel" => "NOT_DEFINED",
+        "collateralDamagePotential" => "LOW_MEDIUM", "confidentialityRequirement" => "HIGH",
+      }.each { |k, val| json[k].as_s.should eq(val) }
+      %w[reportConfidence targetDistribution integrityRequirement availabilityRequirement]
+        .each { |k| json.has_key?(k).should be_false }
+      # Kept as an extension: not in the v2.0 schema, which allows it.
+      json["baseSeverity"].as_s.should eq("MEDIUM")
+    end
+
+    it "spells out v3 metrics under the v3.x schema's names" do
+      v = CVSS.parse("CVSS:3.0/AV:A/AC:H/PR:L/UI:R/S:C/C:L/I:N/A:H/E:P/RC:X/IR:M/MAV:P/MS:U/MI:X")
+      json = JSON.parse(v.to_json).as_h
+      {
+        "attackVector" => "ADJACENT_NETWORK", "attackComplexity" => "HIGH",
+        "privilegesRequired" => "LOW", "userInteraction" => "REQUIRED",
+        "scope" => "CHANGED", "confidentialityImpact" => "LOW",
+        "integrityImpact" => "NONE", "availabilityImpact" => "HIGH",
+        "exploitCodeMaturity" => "PROOF_OF_CONCEPT", "reportConfidence" => "NOT_DEFINED",
+        "integrityRequirement" => "MEDIUM", "modifiedAttackVector" => "PHYSICAL",
+        "modifiedScope" => "UNCHANGED", "modifiedIntegrityImpact" => "NOT_DEFINED",
+      }.each { |k, val| json[k].as_s.should eq(val) }
+      %w[remediationLevel confidentialityRequirement modifiedAttackComplexity modifiedAvailabilityImpact]
+        .each { |k| json.has_key?(k).should be_false }
+    end
+
     # FIRST's cvss-v4.0.json sets `unevaluatedProperties: false`, so any
     # field beyond the schema's own makes the object invalid — as embedded
-    # in a CVE JSON 5 record's `cvssV4_0`, for one.
+    # in a CVE JSON 5 record's `cvssV4_0`, for one. Revision 2 defines no
+    # threat/environmental score, only the metric properties.
     it "emits only FIRST v4.0 schema fields for v4" do
-      v = CVSS.parse("CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:H/VI:H/VA:H/SC:N/SI:N/SA:N/E:A/MAV:P/AU:Y")
+      v = CVSS.parse("CVSS:4.0/AV:A/AC:L/AT:P/PR:N/UI:P/VC:H/VI:L/VA:N/SC:N/SI:N/SA:L/" \
+                     "E:P/CR:X/MAV:A/MSC:N/MSI:S/MSA:N/S:P/AU:Y/R:I/V:C/RE:M/U:Amber")
       json = JSON.parse(v.to_json).as_h
-      json.keys.sort!.should eq(%w[baseScore baseSeverity vectorString version])
-      json["version"].as_s.should eq("4.0")
+      json.keys.should eq(%w[
+        version vectorString baseScore baseSeverity
+        attackVector attackComplexity attackRequirements privilegesRequired userInteraction
+        vulnConfidentialityImpact vulnIntegrityImpact vulnAvailabilityImpact
+        subConfidentialityImpact subIntegrityImpact subAvailabilityImpact
+        exploitMaturity confidentialityRequirement modifiedAttackVector
+        modifiedSubConfidentialityImpact modifiedSubIntegrityImpact modifiedSubAvailabilityImpact
+        Safety Automatable Recovery valueDensity vulnerabilityResponseEffort providerUrgency
+      ])
       json["vectorString"].as_s.should eq(v.to_s)
       json["baseScore"].as_f.should eq(v.base_score)
       json["baseSeverity"].as_s.should eq(v.severity.to_s.upcase)
+      # v4.0's own spellings, unlike v3's ADJACENT_NETWORK / NONE.
+      json["attackVector"].as_s.should eq("ADJACENT")
+      json["modifiedAttackVector"].as_s.should eq("ADJACENT")
+      json["exploitMaturity"].as_s.should eq("PROOF_OF_CONCEPT")
+      json["subConfidentialityImpact"].as_s.should eq("NONE")
+      json["modifiedSubConfidentialityImpact"].as_s.should eq("NEGLIGIBLE")
+      json["modifiedSubIntegrityImpact"].as_s.should eq("SAFETY")
+      json["modifiedSubAvailabilityImpact"].as_s.should eq("NEGLIGIBLE")
+      json["confidentialityRequirement"].as_s.should eq("NOT_DEFINED")
+      json["Safety"].as_s.should eq("PRESENT")
+      json["Automatable"].as_s.should eq("YES")
+      json["Recovery"].as_s.should eq("IRRECOVERABLE")
+      json["valueDensity"].as_s.should eq("CONCENTRATED")
+      json["vulnerabilityResponseEffort"].as_s.should eq("MODERATE")
+      json["providerUrgency"].as_s.should eq("AMBER")
     end
 
     it "handles v2 vectors (no Critical band)" do

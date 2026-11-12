@@ -28,7 +28,7 @@ Abstract class. Every concrete vector (`CVSS::V2::Vector`, `CVSS::V3::Vector`, `
 | `<=>(other : Vector) : Int32?` | Orders by `base_score`. Returns `nil` only on NaN (never produced by valid inputs). |
 | `==(other : Vector) : Bool` | Default returns `false`; subclasses override with structural equality. |
 | `inspect(io : IO) : Nil` | Outputs `#<CVSS::V3::Vector CVSS:3.1/... base=9.8>`. |
-| `to_json(json : JSON::Builder) : Nil` | Emits an NVD-shaped JSON object. |
+| `to_json(json : JSON::Builder) : Nil` | Emits the FIRST CVSS JSON schema object (NVD `cvssData` shape), metrics included. |
 | `metric_value(name : String) : String` | Short-code for one metric. Unset optional metrics report the version's not-defined code (`X` for v3.x/v4.0, `ND` for v1.0/v2.0). |
 | `to_h : Hash(String, String)` | Metric short-codes in canonical order. Optional metrics omitted when unset. |
 

@@ -6,7 +6,7 @@ weight = 4
 
 ## NVD-shaped JSON output
 
-`Vector#to_json` produces a payload aligned with the FIRST CVSS JSON Schema and the NVD CVE feed format:
+`Vector#to_json` produces the CVSS object defined by FIRST's JSON schemas ([v2.0](https://www.first.org/cvss/cvss-v2.0.json), [v3.0](https://www.first.org/cvss/cvss-v3.0.json), [v3.1](https://www.first.org/cvss/cvss-v3.1.json), [v4.0](https://www.first.org/cvss/cvss-v4.0.json)) — the shape of NVD's `cvssData` and of a CVE JSON 5 `cvssV2_0`…`cvssV4_0`:
 
 ```crystal
 require "json"
@@ -23,16 +23,31 @@ puts vec.to_json
   "baseSeverity": "CRITICAL",
   "exploitabilityScore": 3.9,
   "impactScore": 5.9,
+  "attackVector": "NETWORK",
+  "attackComplexity": "LOW",
+  "privilegesRequired": "NONE",
+  "userInteraction": "NONE",
+  "scope": "UNCHANGED",
+  "confidentialityImpact": "HIGH",
+  "integrityImpact": "HIGH",
+  "availabilityImpact": "HIGH",
+  "exploitCodeMaturity": "FUNCTIONAL",
+  "remediationLevel": "OFFICIAL_FIX",
+  "reportConfidence": "CONFIRMED",
   "temporalScore": 9.1,
   "temporalSeverity": "CRITICAL"
 }
 ```
 
+Every metric the vector carries is spelled out under the schema's property name and enum value (`attackVector: "NETWORK"`, `exploitMaturity: "PROOF_OF_CONCEPT"`). A metric is emitted exactly when it appears in `vectorString`: an explicit `X` (or v2 `ND`) becomes `"NOT_DEFINED"`, as in NVD's `cvssData`, and a metric left out of the vector is left out of the object.
+
 Per-version differences:
 
 - **v1.0**, **v2** and **v3.x** add `temporalScore`/`temporalSeverity` and `environmentalScore`/`environmentalSeverity` only when the corresponding optional metrics are present in the vector.
 - **v3.x** always includes `exploitabilityScore` and `impactScore` (rounded to one decimal, matching NVD).
-- **v4.0** emits only `version`, `vectorString`, `baseScore` and `baseSeverity`. FIRST's v4.0 schema rejects any property it does not define, so `macro_vector` and `nomenclature` are methods, not JSON fields.
+- **v4.0** emits `version`, `vectorString`, `baseScore`, `baseSeverity` and the metric properties, nothing else. FIRST's v4.0 schema rejects any property it does not define, and Revision 2 defines no threat or environmental score, so `macro_vector` and `nomenclature` are methods, not JSON fields.
+
+A few fields are kept as extensions outside the FIRST schemas, which the v2.0 and v3.x schemas allow (they do not forbid additional properties): `baseSeverity`, `temporalSeverity` and `environmentalSeverity` on v2 (NVD's severity bands — the v2 guide defines none, and NVD puts `baseSeverity` beside `cvssData` rather than in it), and `exploitabilityScore` / `impactScore` on v3.x (NVD carries those beside `cvssData` too). v1.0 has no FIRST schema, so its object carries the score fields only.
 
 ## Reading JSON
 
