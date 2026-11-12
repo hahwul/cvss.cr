@@ -183,6 +183,16 @@ module CVSS
     # and values stay case-sensitive, as the specs require.
     PREFIX_RE = /\ACVSS:(\d+\.\d+)\//i
 
+    # The input every parser works on: `input` with surrounding whitespace
+    # removed. Raises `ParseError` when it is not valid UTF-8 — a vector
+    # read from a file or a feed can carry stray bytes, and Crystal's
+    # regex engine raises a bare `ArgumentError` on them, which would
+    # escape `parse?` and `from_json?`.
+    def prepare(input : String) : String
+      raise ParseError.new("vector string is not valid UTF-8") unless input.valid_encoding?
+      input.strip
+    end
+
     # The CVSS version declared by a `CVSS:x.y/` prefix, or nil when the
     # string carries none.
     def prefix_version(body : String) : String?

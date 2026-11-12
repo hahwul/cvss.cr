@@ -88,7 +88,7 @@ module CVSS::V3
     end
 
     def self.parse(input : String) : Vector
-      raw = input.strip
+      raw = VectorString.prepare(input)
       # The prefix literal is matched case-insensitively (see
       # `VectorString::PREFIX_RE`); the version and metrics are not.
       unless raw.size >= 5 && raw[0, 5].compare("CVSS:", case_insensitive: true) == 0

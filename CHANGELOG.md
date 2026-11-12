@@ -19,6 +19,13 @@
   schema-invalid (e.g. as a CVE JSON 5 `cvssV4_0` object). Use the
   `macro_vector` and `nomenclature` methods instead.
 
+### Fixed
+
+- `CVSS.parse` and the version-specific parsers raising a bare
+  `ArgumentError` ("Regex match error: UTF-8 error") on a vector string
+  that is not valid UTF-8 — which escaped `parse?` and `from_json?` too.
+  They now raise `CVSS::ParseError`.
+
 ## v0.3.0
 
 ### Added

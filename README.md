@@ -268,8 +268,8 @@ vec.network?                   # AV:N
 vec.local?                     # AV:L
 vec.physical?                  # AV:P (v3, v4)
 vec.requires_privileges?       # PR != N (v3, v4)
-vec.requires_authentication?   # Au != N (v2)
-vec.requires_user_interaction? # UI != N
+vec.requires_authentication?   # Au != N (v2), Au:R (v1)
+vec.requires_user_interaction? # UI != N (v3, v4)
 vec.scope_changed?             # S:C (v3 only)
 vec.impacts_subsequent_system? # any of SC/SI/SA != N (v4 only)
 vec.impacts_confidentiality?

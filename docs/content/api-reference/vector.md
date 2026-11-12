@@ -6,7 +6,7 @@ weight = 1
 
 ## `CVSS::Vector`
 
-Abstract class. Every concrete vector (`CVSS::V2::Vector`, `CVSS::V3::Vector`, `CVSS::V4::Vector`) inherits from it and implements the abstract methods.
+Abstract class. Every concrete vector (`CVSS::V1::Vector`, `CVSS::V2::Vector`, `CVSS::V3::Vector`, `CVSS::V4::Vector`) inherits from it and implements the abstract methods.
 
 `CVSS::Vector` `include`s `Comparable(Vector)`, so any two vectors can be compared with `<`, `<=`, `>`, `>=`, `clamp`, `between?`, and used with `Array#sort`.
 
@@ -14,7 +14,7 @@ Abstract class. Every concrete vector (`CVSS::V2::Vector`, `CVSS::V3::Vector`, `
 
 | Method | Description |
 |--------|-------------|
-| `version : String` | Returns `"2.0"`, `"3.0"`, `"3.1"`, or `"4.0"`. |
+| `version : String` | Returns `"1.0"`, `"2.0"`, `"3.0"`, `"3.1"`, or `"4.0"`. |
 | `base_score : Float64` | Final, rounded base score in `0.0..10.0`. |
 | `severity : Severity` | Qualitative rating (see Severity). |
 | `to_s(io : IO) : Nil` | Writes the canonical vector string to `io`. |

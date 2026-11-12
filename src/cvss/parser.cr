@@ -22,7 +22,7 @@ module CVSS
     V3_ONLY_RE = /(?:\A|[\/(])(?:PR|UI|S|MAV|MAC|MPR|MUI|MS|MC|MI|MA):/
 
     def parse(input : String) : Vector
-      raw = input.strip
+      raw = VectorString.prepare(input)
       raise ParseError.new("empty vector string") if raw.empty?
 
       if version = VectorString.prefix_version(raw)

@@ -146,7 +146,7 @@ module CVSS::V4
     end
 
     def self.parse(input : String) : Vector
-      raw = input.strip
+      raw = VectorString.prepare(input)
       unless VectorString.prefix_version(raw)
         raise ParseError.new("CVSS v4 vector must start with 'CVSS:4.0/'")
       end

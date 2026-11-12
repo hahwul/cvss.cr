@@ -77,7 +77,7 @@ module CVSS::V1
     end
 
     def self.parse(input : String) : Vector
-      raw = input.strip
+      raw = VectorString.prepare(input)
       raise ParseError.new("empty CVSS v1 vector") if raw.empty?
 
       # Tolerate an explicit "CVSS:1.0/" prefix even though it isn't part
