@@ -4,7 +4,11 @@ require "json"
 #
 # `Vector#to_json` emits a payload modeled after the FIRST CVSS JSON Schema
 # (https://www.first.org/cvss/cvss-v3.1.json) and the NVD CVE feed format,
-# limited to the fields that round-trip cleanly:
+# limited to the fields that round-trip cleanly. FIRST's v4.0 schema sets
+# `unevaluatedProperties: false`, rejecting any property it does not
+# define, so a v4 object carries only the four fields below —
+# `macro_vector` and `nomenclature` are methods on `CVSS::V4::Vector`,
+# not JSON fields:
 #
 # ```json
 # {
@@ -256,19 +260,6 @@ module CVSS::V3
       !(@cr.nil? && @ir.nil? && @ar.nil? &&
         @mav.nil? && @mac.nil? && @mpr.nil? && @mui.nil? && @ms.nil? &&
         @mc.nil? && @mi.nil? && @ma.nil?)
-    end
-  end
-end
-
-module CVSS::V4
-  class Vector < CVSS::Vector
-    protected def write_json_fields(json : ::JSON::Builder) : Nil
-      super
-      # CVSS v4.0 has only a single score (threat/environmental folded in
-      # via the macro vector). Expose the macro vector and nomenclature
-      # classification for tooling.
-      json.field "macroVector", macro_vector
-      json.field "nomenclature", nomenclature.to_s
     end
   end
 end

@@ -1,5 +1,15 @@
 # Changelog
 
+## Unreleased
+
+### Changed
+
+- `CVSS::V4::Vector#to_json` no longer emits `macroVector` and
+  `nomenclature`. FIRST's cvss-v4.0.json schema sets
+  `unevaluatedProperties: false`, so those fields made every v4 payload
+  schema-invalid (e.g. as a CVE JSON 5 `cvssV4_0` object). Use the
+  `macro_vector` and `nomenclature` methods instead.
+
 ## v0.3.0
 
 ### Added
