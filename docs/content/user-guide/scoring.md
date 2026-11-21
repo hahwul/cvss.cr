@@ -47,7 +47,9 @@ v.base_score           # => 9.8
 v.environmental_score  # => 6.3
 ```
 
-CVSS v3.0 and v3.1 share the same RoundUp at the base level, but use different polynomials in the *modified* impact formula. The library handles both transparently.
+CVSS v3.0 rounds up to the next tenth when needed. CVSS v3.1 first rounds
+to five decimal places and then rounds up to the next tenth when needed.
+The versions also use different polynomials for Modified Impact.
 
 ## CVSS v4.0 — single score
 

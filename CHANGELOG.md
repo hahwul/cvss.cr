@@ -21,6 +21,11 @@
 
 ### Fixed
 
+- Rounding helpers preserve very large finite inputs. CVSS v3.0 RoundUp
+  rounds genuine fractions above a tenth up, and `CVSS.round1` rounds
+  genuine fractions below a midpoint down.
+- JSON searches now find vectors inside objects and arrays stored under
+  a `vectorString` key.
 - CVSS v4.0 parsers now reject metrics outside the order required by the
   FIRST specification. Optional metrics can still be omitted or set to `X`.
 - `CVSS.parse` and the version-specific parsers raising a bare

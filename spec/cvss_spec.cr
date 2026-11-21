@@ -617,6 +617,18 @@ describe CVSS do
       end
     end
 
+    it "finds vectors inside containers named vectorString" do
+      good = "AV:N/AC:L/Au:N/C:P/I:P/A:P"
+      payload = <<-JSON
+        {"a":{"vectorString":{"vectorString":[{"vectorString":"#{good}"}]}},
+         "b":{"vectorString":"AV:N/AC:L/Au:N/C:C/I:C/A:C"}}
+        JSON
+
+      CVSS.from_json(payload).to_s.should eq(good)
+      CVSS.from_json?(IO::Memory.new(payload)).try(&.to_s).should eq(good)
+      CVSS.from_json_all(payload).map(&.base_score).should eq([7.5, 10.0])
+    end
+
     it "reports why the only candidate failed rather than claiming there was none" do
       expect_raises(CVSS::UnknownVersionError, /unsupported CVSS version: 9.9/) do
         CVSS.from_json(%({"a":{"vectorString":"CVSS:9.9/AV:N/AC:L"}}))
@@ -748,11 +760,12 @@ describe CVSS do
   end
 
   describe "CVSS.round1" do
-    it "rounds half away from zero to one decimal place" do
+    it "rounds to one decimal place with positive ties upwards" do
       CVSS.round1(7.4499).should eq(7.4)
       CVSS.round1(7.45).should eq(7.5)
       CVSS.round1(7.4500001).should eq(7.5)
       CVSS.round1(0.0).should eq(0.0)
+      CVSS.round1(-0.0).to_s.should eq("0.0")
       CVSS.round1(10.0).should eq(10.0)
     end
 
@@ -774,28 +787,25 @@ describe CVSS do
     it "still rounds down when the value is genuinely below the boundary" do
       CVSS.round1(2.8499).should eq(2.8)
       CVSS.round1(2.84999).should eq(2.8)
+      CVSS.round1(2.849999).should eq(2.8)
+      CVSS.round1(-2.850001).should eq(-2.9)
     end
 
-    # `round1` is public. The five-decimal snap goes through `to_i64`, which
-    # raises OverflowError on non-finite input and on anything past
-    # ~9.2233e13 (Int64::MAX / 100_000). No scoring path can reach those, but
-    # a raw stdlib exception must never escape a public method.
     it "returns non-finite input unchanged instead of raising" do
       CVSS.round1(Float64::NAN).nan?.should be_true
       CVSS.round1(Float64::INFINITY).should eq(Float64::INFINITY)
       CVSS.round1(-Float64::INFINITY).should eq(-Float64::INFINITY)
     end
 
-    it "falls back to the float path past the Int64 snap boundary" do
-      [1.0e14, 9.3e13, -1.0e14, 1.0e300, -1.0e300, Float64::MAX].each do |x|
-        CVSS.round1(x).should be_a(Float64)
-      end
-      CVSS.round1(1.0e300).should eq(1.0e300)
-      CVSS.round1(1.0e14).should eq(1.0e14)
+    it "rounds large values that still represent fractions" do
+      CVSS.round1(1.0e14 + 0.125).should eq(1.0e14 + 0.1)
+      CVSS.round1(-1.0e14 - 0.125).should eq(-1.0e14 - 0.1)
+      CVSS.round1(1.0e15 + 0.125).should eq(1.0e15 + 0.1)
     end
 
-    it "still snaps just inside the boundary" do
-      CVSS.round1(CVSS::ROUND1_SNAP_LIMIT - 1.0).should be_a(Float64)
+    it "preserves finite inputs at the extremes of Float64" do
+      CVSS.round1(Float64::MAX).should eq(Float64::MAX)
+      CVSS.round1(-Float64::MAX).should eq(-Float64::MAX)
     end
 
     it "breaks ties upwards, not away from zero" do

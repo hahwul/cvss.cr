@@ -22,25 +22,28 @@ module CVSS::V3
       end
     end
 
-    # CVSS v3.0 RoundUp = ceiling(input * 10) / 10. The intermediate
-    # multiplication is run through an integer round-trip so values like
-    # `4.65 * 10 = 46.4999...` don't quietly become 4.6.
+    # CVSS v3.0 RoundUp chooses the smallest tenth at or above the input.
+    # Allow one float of arithmetic noise above a nonzero tenth, as in
+    # `5.0 * 0.92`. A positive input close to zero still rounds up to 0.1.
     def roundup30(input : Float64) : Float64
       unsnapped_roundup(input).try { |rounded| return rounded }
+      return 0.0 if input.zero?
 
-      int_input = (input * 100_000.0).round.to_i64
-      ((int_input + 9_999) // 10_000).to_f / 10.0
+      tenths = (input * 10.0).floor
+      lower = tenths / 10.0
+      return lower if input <= lower || (!lower.zero? && input == lower.next_float)
+
+      (tenths + 1.0) / 10.0
     end
 
-    # The RoundUp of an input the five-decimal snap cannot take, or nil when
-    # it can. NaN and ±Infinity have no integer form, and past
-    # `CVSS::ROUND1_SNAP_LIMIT` the snap overflows `to_i64`. Scoring never
-    # gets there, but both RoundUps are public, so — like `CVSS.round1` —
-    # they return a non-finite input unchanged and fall back to the plain
-    # float ceiling for a huge one, instead of raising OverflowError.
+    # Handle inputs outside the five-decimal snap's range. Past the Int64
+    # limit, scale only the fractional part to retain its precision.
     private def unsnapped_roundup(input : Float64) : Float64?
-      return input unless input.finite?
-      (input * 10.0).ceil / 10.0 if input.abs >= CVSS::ROUND1_SNAP_LIMIT
+      return input if !input.finite? || input.abs >= CVSS::FLOAT64_TENTHS_LIMIT
+      return nil if input.abs < CVSS::ROUND1_SNAP_LIMIT
+
+      whole = input.trunc
+      whole + ((input - whole) * 10.0).ceil / 10.0
     end
 
     def roundup(input : Float64, version : String) : Float64
