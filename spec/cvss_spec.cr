@@ -38,6 +38,15 @@ describe CVSS do
       vec.base_score.should eq(9.3)
     end
 
+    it "rejects reordered v4.0 metrics from strings and JSON" do
+      input = "CVSS:4.0/AC:L/AV:N/AT:N/PR:N/UI:N/VC:H/VI:H/VA:H/SC:N/SI:N/SA:N"
+      json = {"vectorString" => input}.to_json
+
+      expect_raises(CVSS::ParseError, /canonical order/) { CVSS.parse(input) }
+      expect_raises(CVSS::ParseError, /canonical order/) { CVSS.from_json(json) }
+      CVSS.from_json?(json).should be_nil
+    end
+
     it "dispatches a parenthesised v1 vector on its Impact Bias metric" do
       vec = CVSS.parse("(AV:R/AC:L/Au:NR/C:C/I:C/A:C/B:N)")
       vec.should be_a(CVSS::V1::Vector)

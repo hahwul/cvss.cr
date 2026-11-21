@@ -155,14 +155,12 @@ module CVSS::V4
       raise ParseError.new("missing metrics after prefix") if body.empty?
 
       pairs = VectorString.split_metrics(body)
-      seen = Set(String).new
       values = {} of String => String
 
       pairs.each do |key, value|
-        if seen.includes?(key)
+        if values.has_key?(key)
           raise ParseError.new("duplicate metric '#{key}'")
         end
-        seen << key
         values[key] = value
       end
 
@@ -172,14 +170,21 @@ module CVSS::V4
       # inside their metric loop; v4 collects its metrics first, so it needs
       # the explicit ordering. The wording still differs — v4 names every
       # unknown key, the others stop at the first.
-      unknown = values.keys.reject { |k| METRIC_ORDER.includes?(k) }
+      keys = values.keys
+      unknown = keys.reject { |k| METRIC_ORDER.includes?(k) }
       unless unknown.empty?
         raise ParseError.new("unknown CVSS v4 metric(s): #{unknown.join(", ")}")
       end
 
-      missing = BASE_REQUIRED.reject { |k| seen.includes?(k) }
+      missing = BASE_REQUIRED.reject { |k| values.has_key?(k) }
       unless missing.empty?
         raise ParseError.new("missing required base metric(s): #{missing.join(", ")}")
+      end
+
+      # CVSS v4.0 requires Table 23 order, with gaps for omitted optional metrics.
+      ordered_keys = METRIC_ORDER.select { |key| values.has_key?(key) }
+      unless keys == ordered_keys
+        raise ParseError.new("CVSS v4 metrics must be in canonical order: #{ordered_keys.join("/")}")
       end
 
       new(

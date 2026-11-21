@@ -54,6 +54,10 @@ CVSS.parse("AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H")
 # 'CVSS:3.1/' prefix; ...
 ```
 
+CVSS v4.0 requires the metric order in Table 23 and allows optional metrics
+to be omitted. CVSS v3.0 and v3.1 accept metrics in any order.
+[FIRST CVSS v4.0 specification](https://www.first.org/cvss/v4.0/specification-document)
+
 ```crystal
 require "cvss"
 
