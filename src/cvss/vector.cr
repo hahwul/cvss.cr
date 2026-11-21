@@ -4,6 +4,10 @@ module CVSS
   # 9.2233e13); rounded down for headroom.
   ROUND1_SNAP_LIMIT = 9.0e13
 
+  # At this magnitude the Float64 spacing is at least 0.25. Rounding by
+  # less than 0.1 leaves the same representable value.
+  FLOAT64_TENTHS_LIMIT = 2.0 ** 50
+
   # Round `x` to one decimal place. Ties break *upwards*, i.e. toward
   # positive infinity rather than away from zero — `round1(0.15)` is `0.2`
   # and `round1(-0.15)` is `-0.1`. CVSS scores are non-negative, so only the
@@ -12,22 +16,18 @@ module CVSS
   # for the v3 exploitability/impact sub-scores. Centralised here so the
   # score module and the JSON serialiser cannot drift apart.
   #
-  # The value is first snapped to five decimal places in integer space. A
-  # naive `(x * 10 + 0.5).floor` reads `3.0 * 0.95` as 2.8499999999999996
-  # and rounds it down to 2.8, where the arithmetic the spec describes gives
-  # 2.85 → 2.9. This is the same binary-representation trap CVSS v3.1 §7.1
-  # (and its Appendix A) works around in `Roundup`.
+  # Accept the float immediately below each midpoint as a tie to absorb
+  # arithmetic noise such as `3.0 * 0.95` landing one float below 2.85.
   def self.round1(x : Float64) : Float64
-    # NaN and ±Infinity have no one-decimal form to snap to, and every input
-    # past `ROUND1_SNAP_LIMIT` would overflow `to_i64`. Scoring never reaches
-    # either, but `round1` is public, so degrade instead of letting a raw
-    # `OverflowError` escape. Above the limit a Float64 carries no fractional
-    # part anyway, which is all the snap exists to correct.
-    return x if x.nan? || x.infinite?
-    return ((x * 10.0 + 0.5).floor) / 10.0 if x.abs >= ROUND1_SNAP_LIMIT
+    return x if !x.finite? || x.abs >= FLOAT64_TENTHS_LIMIT
 
-    scaled = (x * 100_000.0).round.to_i64
-    ((scaled + 5_000) // 10_000).to_f / 10.0
+    # Scale only the fractional part of large values to retain its precision.
+    offset = x.abs >= ROUND1_SNAP_LIMIT ? x.trunc : 0.0
+    value = x - offset
+    lower = (value * 10.0).floor
+    midpoint = (lower + 0.5) / 10.0
+    lower += 1.0 if value >= midpoint.prev_float
+    offset + lower / 10.0
   end
 
   # Common interface for every CVSS vector implementation.

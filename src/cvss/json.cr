@@ -229,10 +229,8 @@ module CVSS
   private def self.collect_vector_strings(value : ::JSON::Any, into : Array(String)) : Nil
     if hash = value.as_h?
       hash.each do |key, child|
-        if key == "vectorString"
-          if string = child.as_s?
-            into << string
-          end
+        if key == "vectorString" && (string = child.as_s?)
+          into << string
         else
           collect_vector_strings(child, into)
         end
