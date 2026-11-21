@@ -21,6 +21,8 @@
 
 ### Fixed
 
+- CVSS v4.0 parsers now reject metrics outside the order required by the
+  FIRST specification. Optional metrics can still be omitted or set to `X`.
 - `CVSS.parse` and the version-specific parsers raising a bare
   `ArgumentError` ("Regex match error: UTF-8 error") on a vector string
   that is not valid UTF-8 — which escaped `parse?` and `from_json?` too.

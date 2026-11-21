@@ -120,6 +120,13 @@ describe CVSS::V3::Vector do
   end
 
   describe "to_s" do
+    it "canonicalizes reordered metrics for both v3 versions" do
+      {"3.0", "3.1"}.each do |version|
+        vector = parse("CVSS:#{version}/S:U/AV:N/AC:L/PR:H/UI:N/C:L/I:L/A:N/RL:X/E:F")
+        vector.to_s.should eq("CVSS:#{version}/AV:N/AC:L/PR:H/UI:N/S:U/C:L/I:L/A:N/E:F/RL:X")
+      end
+    end
+
     it "round-trips a base vector" do
       s = "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H"
       parse(s).to_s.should eq(s)

@@ -43,6 +43,27 @@ describe CVSS::V4::Vector do
       v.e.should eq(CVSS::V4::ExploitMaturity::Attacked)
       v.u.should eq(CVSS::V4::ProviderUrgency::Clear)
     end
+
+    it "accepts an ordered subset of optional metrics, including explicit X" do
+      s = "CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:H/VI:H/VA:H/SC:N/SI:N/SA:N" \
+          "/E:X/AR:M/MSA:S/AU:X/U:Red"
+      parse(s).to_s.should eq(s)
+    end
+
+    it "rejects base metrics in the wrong order" do
+      expect_raises(CVSS::ParseError, /canonical order/) do
+        parse("CVSS:4.0/AC:L/AV:N/AT:N/PR:N/UI:N/VC:H/VI:H/VA:H/SC:N/SI:N/SA:N")
+      end
+    end
+
+    it "rejects out-of-order optional metrics, including explicit X" do
+      base = "CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:H/VI:H/VA:H/SC:N/SI:N/SA:N"
+      {"/CR:H/E:X", "/IR:M/CR:H", "/U:Red/S:X"}.each do |suffix|
+        input = base + suffix
+        expect_raises(CVSS::ParseError, /canonical order/) { parse(input) }
+        CVSS::V4::Vector.parse?(input).should be_nil
+      end
+    end
   end
 
   describe "base_score" do
@@ -234,7 +255,7 @@ describe CVSS::V4::Vector do
     end
 
     it "supplemental metrics never change the nomenclature" do
-      v = parse("CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:H/VI:H/VA:H/SC:N/SI:N/SA:N/U:Red/AU:Y/R:I/V:C/RE:H/S:P")
+      v = parse("CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:H/VI:H/VA:H/SC:N/SI:N/SA:N/S:P/AU:Y/R:I/V:C/RE:H/U:Red")
       v.nomenclature.should eq(CVSS::V4::Nomenclature::Base)
     end
 
